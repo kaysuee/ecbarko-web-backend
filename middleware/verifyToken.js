@@ -2,9 +2,22 @@ import jwt from 'jsonwebtoken';
 import UserModel from '../models/superAdminModels/saAdmin.model.js';  
 import TicketClerkModel from '../models/adminModels/ticketclerk.model.js';
 
+const getTokenFromRequest = (req) => {
+    let token = req.cookies.token;
+    
+    if (!token && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+    }
+    
+    return token;
+};
+
 const isSuperAdmin = async (req, res, next) => {
     try {
-        const token = req.cookies.token;
+        const token = getTokenFromRequest(req);
         if (!token) {
             return res.status(401).json({ message: "Unauthorized: No token provided" });
         }
@@ -29,7 +42,7 @@ const isSuperAdmin = async (req, res, next) => {
 
 const isAdminOrSuperAdmin = async (req, res, next) => {
     try {
-        const token = req.cookies.token;
+        const token = getTokenFromRequest(req);
         if (!token) {
             return res.status(401).json({ message: "Unauthorized: No token provided" });
         }
@@ -54,7 +67,7 @@ const isAdminOrSuperAdmin = async (req, res, next) => {
 
 const isUser = async (req, res, next) => {    
     try {
-        const token = req.cookies.token;
+        const token = getTokenFromRequest(req);
         if (!token) {
             return res.status(401).json({ message: "Unauthorized: No token provided" });
         }
