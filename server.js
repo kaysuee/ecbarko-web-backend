@@ -28,27 +28,46 @@ DbCon()
 app.use(express.json())
 app.use(cookieparser())
 
-// Updated CORS configuration for production
-const allowedOrigins = [
-    'http://localhost:5173', // For local development
-    'https://ecbarko-kr8b.onrender.com', // Replace with your actual frontend URL
-    process.env.FRONTEND_URL // Environment variable for flexibility
-].filter(Boolean); // Remove undefined values
-
+// CORS configuration - Allow multiple origins
 app.use(cors({
     credentials: true,
     origin: function (origin, callback) {
         // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // List of allowed origins
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://ecbarko.onrender.com',
+            'https://ecbarko.netlify.app',
+            'https://ecbarko.vercel.app'
+        ];
+        
+        // Check if origin matches any allowed origin or is a render/netlify/vercel subdomain
+        const isAllowed = allowedOrigins.includes(origin) || 
+                         origin.includes('.onrender.com') ||
+                         origin.includes('.netlify.app') ||
+                         origin.includes('.vercel.app');
+        
+        if (isAllowed) {
+            console.log('✅ Allowed origin:', origin);
             callback(null, true);
         } else {
-            console.log('Blocked origin:', origin);
+            console.log('❌ Blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
-    }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
 }));
+
+// Add this middleware for debugging
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path} - Origin: ${req.get('Origin')}`);
+    next();
+});
 
 app.use('/api/auth',AuthRoutes)
 app.use('/api/admin',AdminRoutes)
@@ -66,7 +85,6 @@ app.get('/',(req,res)=>{
 })
 
 console.log("Registered endpoints:", listEndpoints(app));
-console.log("Allowed origins:", allowedOrigins);
 
 app.listen(PORT,()=>{
     console.log(`server is running on ${PORT}`)
