@@ -28,42 +28,19 @@ DbCon()
 app.use(express.json())
 app.use(cookieparser())
 
-// CORS configuration - Allow multiple origins
+// CORS configuration with your exact frontend URL
 app.use(cors({
     credentials: true,
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
-        
-        // List of allowed origins
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'http://localhost:3000',
-            'https://ecbarko.onrender.com',
-            'https://ecbarko.netlify.app',
-            'https://ecbarko.vercel.app'
-        ];
-        
-        // Check if origin matches any allowed origin or is a render/netlify/vercel subdomain
-        const isAllowed = allowedOrigins.includes(origin) || 
-                         origin.includes('.onrender.com') ||
-                         origin.includes('.netlify.app') ||
-                         origin.includes('.vercel.app');
-        
-        if (isAllowed) {
-            console.log('✅ Allowed origin:', origin);
-            callback(null, true);
-        } else {
-            console.log('❌ Blocked origin:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: [
+        'http://localhost:5173', // For local development
+        'https://ecbarko-kr8b.onrender.com' // Your production frontend
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     exposedHeaders: ['Set-Cookie']
 }));
 
-// Add this middleware for debugging
+// Debug middleware
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.path} - Origin: ${req.get('Origin')}`);
     next();
