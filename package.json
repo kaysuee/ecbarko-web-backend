@@ -21,7 +21,6 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.16.0",
     "mongoose": "^8.13.2",
-    "nfc-pcsc": "^0.8.1",
     "nodemailer": "^7.0.3"
   },
   "devDependencies": {
