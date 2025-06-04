@@ -27,9 +27,27 @@ const app=express()
 DbCon()
 app.use(express.json())
 app.use(cookieparser())
+
+// Updated CORS configuration for production
+const allowedOrigins = [
+    'http://localhost:5173', // For local development
+    'https://ecbarko-kr8b.onrender.com', // Replace with your actual frontend URL
+    process.env.FRONTEND_URL // Environment variable for flexibility
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
     credentials: true,
-    origin: 'http://localhost:5173'  
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('Blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
 }));
 
 app.use('/api/auth',AuthRoutes)
@@ -44,10 +62,11 @@ app.use('/api', nfcRoutes);
 app.use('/api/bookings', BookingRoutes);
 
 app.get('/',(req,res)=>{
-    res.send('test')
+    res.send('EcBarko Backend API is running!')
 })
 
 console.log("Registered endpoints:", listEndpoints(app));
+console.log("Allowed origins:", allowedOrigins);
 
 app.listen(PORT,()=>{
     console.log(`server is running on ${PORT}`)
