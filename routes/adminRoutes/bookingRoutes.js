@@ -1,5 +1,5 @@
 import express from 'express';
-//import ActiveBookingModel from '../../models/activebooking.js';
+import ActiveBookingModel from '../../models/activebooking.js';
 
 const router = express.Router();
 console.log('bookingRoutes loaded');

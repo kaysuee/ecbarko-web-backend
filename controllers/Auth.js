@@ -2,7 +2,7 @@ import UserModel from "../models/user.js";
 import CardModel from "../models/card.js";
 import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
-import ActiveBooking from "../models/activeBooking.js";
+import ActiveBooking from "../models/activebooking.js";
 import TicketClerkModel from "../models/adminModels/ticketclerk.model.js";
 import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
