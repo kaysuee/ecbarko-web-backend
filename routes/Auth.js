@@ -1,6 +1,7 @@
 import express from 'express';
 import { CheckUser, Login, Logout, register, getCard, payment, forgotpassword,verifyOtp,savePassword, getCardHistory,buyload, tapHistory } from '../controllers/Auth.js';
 import { isUser as IsUser, isAdminOrSuperAdmin } from '../middleware/verifyToken.js';
+import UserModel from '../models/superAdminModels/saAdmin.model.js';
  
 const AuthRoutes = express.Router();
  
@@ -18,7 +19,6 @@ AuthRoutes.get('/cardHistory/:cardNumber', getCardHistory);
 AuthRoutes.get('/tapHistory', tapHistory);
  
 AuthRoutes.get('/api/users', IsUser, isAdminOrSuperAdmin, async (req, res) => {
- 
   try {
     const users = await UserModel.find();
     res.status(200).json(users);
@@ -29,5 +29,3 @@ AuthRoutes.get('/api/users', IsUser, isAdminOrSuperAdmin, async (req, res) => {
 });
  
 export default AuthRoutes;
- 
- 

@@ -21,8 +21,6 @@ const userSechmea= new mongoose.Schema({
     }
 },{timestamps:true})
 
-
 const UserModel= mongoose.model('users',userSechmea)
-
 
 export default UserModel
