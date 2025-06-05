@@ -4,12 +4,10 @@ import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
 import ActiveBooking from "../models/activebooking.js";
 import TicketClerkModel from "../models/adminModels/ticketclerk.model.js";
-import SAAdmin from "../models/superAdminModels/saAdmin.model.js";
 import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { sendOtpEmail, sendResetEmail } from "../utlis/email.js";
 import Taphistory from "../models/tapHistory.js";
-
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -35,18 +33,19 @@ const register = async (req, res) => {
     await newUser.save();
 
     const roleCollections = {
-      "ticket clerk": "ticket-clerk",
-      admin: "admins",
-      "super admin": "super-admin",
+      "ticket clerk": "ticket-clerk", // Collection for ticket clerks
+      admin: "admins", // Collection for admins
+      "super admin": "super-admin", // Collection for super admins
     };
 
+    // Ensure the role is valid and map it to the correct collection
     if (roleCollections[userRole]) {
-      const userFolder = roleCollections[userRole];
+      const userFolder = roleCollections[userRole]; // Use this folder name for role-specific data
       return res.status(200).json({
         success: true,
         message: "User registered successfully",
         newUser,
-        userFolder,
+        userFolder, // Optional: Add this to show where the data is saved (for testing purposes)
       });
     } else {
       return res.status(400).json({ success: false, message: "Invalid role" });
@@ -61,33 +60,23 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    let user = null;
+    let user = await UserModel.findOne({ email, password });
     let clerk = false;
-
-    user = await UserModel.findOne({ email });
-    
     if (!user) {
-      user = await TicketClerkModel.findOne({ email });
-      if (user) {
-        clerk = true;
-      }
+      user = await TicketClerkModel.findOne({ email, password });
+      clerk = true;
     }
-    
-    if (!user) {
-      user = await SAAdmin.findOne({ email });
-    }
-
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(404).json({success:false,message:"Invalid credentials"});
-    }
+    //const ispassaowrdValid= await bcryptjs.compare(password,user.password)
+    //   if (!ispassaowrdValid) {
+    //     return res.status(404).json({success:false,message:"Invalid credentials"})
 
+    //   }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
     res.clearCookie("token");
     res.cookie("token", token, {
@@ -95,20 +84,20 @@ const Login = async (req, res) => {
       secure: false,
       maxAge: 36000000,
     });
-    
-    res.status(200).json({
-      success: true,
-      message: "Login successfully",
-      user,
-      token,
-      clerk,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Login successfully",
+        user,
+        token,
+        clerk,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(error);
   }
 };
-
 const Logout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -118,7 +107,6 @@ const Logout = async (req, res) => {
     console.log(error);
   }
 };
-
 const CheckUser = async (req, res) => {
   try {
     const user = req.user;
@@ -145,7 +133,7 @@ const getCard = async (req, res) => {
       departDate: { $gt: now },
       isPaid: "false",
     }).sort({ departDate: 1 });
-    
+    //console.log("active booking", activebooking);
     if (!cards) {
       return res.status(404).json({ message: "Card not found" });
     }
@@ -155,8 +143,8 @@ const getCard = async (req, res) => {
     }
    
     return res.status(200).json({
-      card: cards[0],
-      activebooking: activebooking || null,
+      card: cards[0], // send single card
+      activebooking: activebooking || null, // null if no upcoming booking
     });
   } catch (error) {
     console.error(error);
@@ -182,7 +170,7 @@ const payment = async (req, res) => {
 
     const card = cards[0];
     card.balance = Number(card.balance) - Number(payment);
-    await card.save();
+    await card.save(); // save updated balance
 
     return res.status(200).json({
       card,
@@ -201,10 +189,6 @@ const forgotpassword = async (req, res) => {
 
     if (!user) {
       user = await TicketClerkModel.findOne({ email });
-    }
-
-    if (!user) {
-      user = await SAAdmin.findOne({ email });
     }
 
     if (!user) {
@@ -241,9 +225,6 @@ const savePassword = async (req, res) => {
     if (!user) {
       user = await TicketClerkModel.findOne({ email });
     }
-    if (!user) {
-      user = await SAAdmin.findOne({ email });
-    }
     user.password = password;
     await user.save();
 
@@ -271,7 +252,7 @@ const getCardHistory = async (req, res) => {
 
       return {
         ...card.toObject(),
-        dateTransaction,
+        dateTransaction, // Ensure we are only formatting a valid Date
       };
     });
 
@@ -304,7 +285,7 @@ const buyload = async (req, res) => {
     });
 
     await cardHistory.save();
-    await card.save();
+    await card.save(); // save updated balance
 
     return res.status(200).json({
       card,
@@ -329,7 +310,7 @@ const tapHistory = async (req, res) => {
 
       return {
         ...card.toObject(),
-        dateTransaction,
+        dateTransaction, // Ensure we are only formatting a valid Date
       };
     });
 
@@ -344,10 +325,11 @@ async function generateUniqueOtp() {
   let otp;
   let exists = true;
 
+  // Loop until a unique OTP is generated
   while (exists) {
-    otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
     const checkOTP = await Otp.findOne({ otp });
-    exists = !!checkOTP;
+    exists = !!checkOTP; // continue loop if OTP exists
   }
 
   return otp;

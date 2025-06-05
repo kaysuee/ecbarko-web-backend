@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
-import SAAdmin from '../models/superAdminModels/saAdmin.model.js';
-import UserModel from '../models/user.js';
+import UserModel from '../models/superAdminModels/saAdmin.model.js';  
 import TicketClerkModel from '../models/adminModels/ticketclerk.model.js';
 
 const getTokenFromRequest = (req) => {
@@ -24,12 +23,7 @@ const isSuperAdmin = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        let user = await SAAdmin.findById(decoded.userId);
-        if (!user) {
-            user = await UserModel.findById(decoded.userId);
-        }
-        
+        const user = await UserModel.findById(decoded.userId);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
         }
@@ -54,12 +48,7 @@ const isAdminOrSuperAdmin = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        let user = await SAAdmin.findById(decoded.userId);
-        if (!user) {
-            user = await UserModel.findById(decoded.userId);
-        }
-        
+        const user = await UserModel.findById(decoded.userId);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
         }
@@ -84,17 +73,12 @@ const isUser = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        let user = await SAAdmin.findById(decoded.userId);
-        if (!user) {
-            user = await UserModel.findById(decoded.userId);
-        }
+        let user = await UserModel.findById(decoded.userId);
         if (!user) {
             user = await TicketClerkModel.findById(decoded.userId);
-        }
-        
-        if (!user) {
-            return res.status(401).json({ message: "User not found" });
+            if (!user) {
+                return res.status(401).json({ message: "User not found" });
+            }
         }
 
         req.user = user;  
