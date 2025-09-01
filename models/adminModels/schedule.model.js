@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const scheduleSchema = new mongoose.Schema({
+  schedcde: { type: String, required: true },
   date: { type: String, required: true },
   departureTime: { type: String, required: true },
   arrivalTime: { type: String, required: true },

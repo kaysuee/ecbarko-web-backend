@@ -8,6 +8,8 @@ const vehicleSchema = new mongoose.Schema({
   category: String,
   status: String,
   lastActive: Date,
+  bookingid: String,
+  shippingline: String,
 }, {
   timestamps: true 
 });

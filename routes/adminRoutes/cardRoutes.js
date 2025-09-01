@@ -10,10 +10,12 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    console.log("sada", req.body);
     const newCard = new Card(req.body);
     await newCard.save();
     res.status(201).json(newCard);
   } catch (err) {
+    console.error("Card creation error:", err);
     res.status(400).json({ error: err.message });
   }
 });

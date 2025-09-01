@@ -298,28 +298,55 @@ const buyload = async (req, res) => {
 
 const tapHistory = async (req, res) => {
   try {
-    const getHistory = await Taphistory.find();
+    const history = await Taphistory.find().sort({ createdAt: -1 });
 
-    if (!getHistory) return res.status(404).json({ error: "Card not found" });
+    if (!history || history.length === 0) {
+      return res.status(404).json({ error: "No tap history found" });
+    }
 
-    const formattedHistory = cardHistory.map((card) => {
-      const dateTransaction =
-        card.dateTransaction instanceof Date
-          ? card.dateTransaction.toISOString()
-          : null;
-
-      return {
-        ...card.toObject(),
-        dateTransaction, // Ensure we are only formatting a valid Date
-      };
-    });
-
-    res.status(200).json(formattedHistory);
+    res.status(200).json(history);
   } catch (error) {
-    console.error(error);
+    console.error("❌ tapHistory error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+const saveTapHistory = async (req, res) => {
+  try {
+    const {
+      name,
+      cardNo,
+      vehicleType,
+      hasActiveBooking,
+      from,
+      to,
+      paymentStatus,
+      amount,
+      timestamp,
+    } = req.body;
+
+    const newTap = new Taphistory({
+      name,
+      cardNo,
+      vehicleType,
+      hasActiveBooking,
+      from,
+      to,
+      paymentStatus,
+      amount,
+      clientTimestamp: timestamp ? new Date(timestamp) : null,
+    });
+
+    await newTap.save();
+
+    res.status(201).json({ success: true, message: "Tap saved", tap: newTap });
+  } catch (error) {
+    console.error("❌ saveTapHistory error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 async function generateUniqueOtp() {
   let otp;
@@ -348,4 +375,5 @@ export {
   getCardHistory,
   buyload,
   tapHistory,
+  saveTapHistory,
 };

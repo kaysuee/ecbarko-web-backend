@@ -1,30 +1,22 @@
 import mongoose from "mongoose";
 
-const tapHistoryschema= new mongoose.Schema({
-    userId:{
-        type:String,
+const TapHistorySchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    cardNo: { type: String, required: true },
+    vehicleType: { type: String, default: "Unknown" },
+    hasActiveBooking: { type: Boolean, required: true },
+    from: { type: String, default: null },
+    to: { type: String, default: null },
+    paymentStatus: {
+      type: String,
+      enum: ["Paid", "Not Applicable", "Insufficient Balance", "Declined", "Unknown"],
+      default: "Unknown",
     },
-    name:{
-        type:String,
-        required:true,
-    },
-    cardNumber:{
-        type:String,
-        required:true,
-    },
-    type:{
-        type:String,
-        required:true
-    },
-    dateTransaction: { type: Date, required: true },
-    payment: { type: String, required: true }, 
-    status: { type: String},
-    departureLocation: { type: String, required: true },
-    arrivalLocation: { type: String, required: true },
-},{timestamps:true,collection: 'tapHistory'})
+    amount: { type: Number, default: 0 },
+    clientTimestamp: { type: Date, default: null }, // frontend/device time
+  },
+  { timestamps: true } // gives createdAt, updatedAt
+);
 
-
-const taphistory= mongoose.model('tapHistory',tapHistoryschema)
-
-
-export default taphistory
+export default mongoose.model("TapHistory", TapHistorySchema);

@@ -5,12 +5,12 @@ const router = express.Router();
 
 router.get('/scan-nfc', (req, res) => {
   const data = getLatestCardData();
-  //console.log("NFC Data:", data); // Log the NFC data for debugging
   if (data) {
     res.json(data);
   } else {
-    res.json({ status: 404 });
+    res.json({ cardNo: null }); // clear signal
   }
 });
+
 
 export default router;

@@ -5,6 +5,7 @@ import { getAboutContent, updateAboutContent } from '../controllers/AboutControl
 import { getHomeContent, updateHomeContent } from '../controllers/HomeControllers.js';
 import { getContactContent, updateContactContent } from '../controllers/ContactUsController.js';
 import { getAboutEBCContent, updateAboutEBCContent } from '../controllers/AboutEBCController.js';
+import { getAboutAppContent, updateAboutAppContent } from '../controllers/AboutAppController.js'; // Add this import
 import { sendAutomaticEmail } from '../controllers/EmailController.js';
 import { sendContactMessage } from '../controllers/ContactFormController.js';
 
@@ -30,5 +31,9 @@ AdminRoutes.put('/contact', isSuperAdmin, updateContactContent);
 //add about ebc
 AdminRoutes.get('/aboutEBC', isSuperAdmin, getAboutEBCContent);
 AdminRoutes.put('/aboutEBC', isSuperAdmin, updateAboutEBCContent);
+
+//add about app routes
+AdminRoutes.get('/aboutapp', isSuperAdmin, getAboutAppContent);
+AdminRoutes.put('/aboutapp', isSuperAdmin, updateAboutAppContent);
 
 export default AdminRoutes;

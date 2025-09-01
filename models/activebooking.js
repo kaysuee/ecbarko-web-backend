@@ -7,13 +7,14 @@ const ActiveBookingSchema = new mongoose.Schema({
   arrivalLocation: { type: String, required: true },
   departDate: { type: Date, required: true },
   departTime: { type: String, required: true },
-  passengers: { type: Number, required: true },
+  passengers: [{
+  name: { type: String, required: true },
+  contact: { type: String, required: true }
+  }],
   hasVehicle: { type: Boolean, default: false },
   vehicleType: { type: String, default: '' },
   status: { type: String, default: 'active' },
   shippingLine: { type: String, required: true },
-  departurePort: { type: String, required: true },
-  arrivalPort: { type: String, required: true },
   payment: { type: Number, required: true },
   isPaid: { type: String, required: true, default: 'active' },
 }, {

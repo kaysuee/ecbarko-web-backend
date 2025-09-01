@@ -11,7 +11,7 @@ try {
   nfc = new NFC();
   console.log("✅ NFC module loaded successfully");
 } catch (err) {
-  console.log("⚠️ NFC not available in this environment (likely production)");
+  console.log("⚠️ NFC not available in this environment (likely production)", err);
   NFC = null;
 }
 
@@ -43,24 +43,26 @@ if (nfc) {
   nfc.on("reader", (reader) => {
     console.log(`Reader ${reader.reader.name} attached`);
 
-    reader.on("card", async (card) => {
-      console.log(`Card detected`, card);
-      const blockToAccess = 4;
-
-      try {
-        const currentData = await readBlock(reader, blockToAccess);
-        let cardInfo = currentData.toString("utf8");
-        cardInfo = cardInfo.replace(/\x00/g, "").trim();
-        console.log("Card Info:", cardInfo);
-
-        updateCardData({ cardNo: cardInfo, scannedAt: new Date() });
-
-        setTimeout(() => removeCardData(), 5000);
-       
-      } catch (err) {
-        console.error("Error during read:", err);
-      }
+    reader.on("card", (card) => {
+      const interval = setInterval(async () => {
+        try {
+          const currentData = await readBlock(reader, 4);
+          let cardInfo = currentData.toString("utf8").replace(/\x00/g, "").trim();
+    
+          if (cardInfo) {
+            updateCardData({ cardNo: cardInfo });
+          } else {
+            clearInterval(interval); // card no longer readable
+            removeCardData();
+          }
+        } catch (e) {
+          console.error("Read error", e);
+          clearInterval(interval);
+          removeCardData();
+        }
+      }, 500); // repeat every 500ms
     });
+    
 
     reader.on("error", (err) => {
       console.error(`Reader error:`, err);
@@ -75,6 +77,7 @@ if (nfc) {
     console.error("NFC error:", err);
   });
 }
+
 
 // Export functions for API endpoints
 export const getNfcStatus = (req, res) => {

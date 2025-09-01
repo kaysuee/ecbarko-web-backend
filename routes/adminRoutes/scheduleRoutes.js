@@ -59,7 +59,7 @@ router.post('/', isUser, async (req, res) => {
     if (user.role !== 'super admin' && user.role !== 'admin') {
       return res.status(403).json({ error: 'Unauthorized to create schedules' });
     }
-    
+    console.log('Creating schedule with data:', req.body);
     const newSchedule = new Schedule(req.body);
     await newSchedule.save();
     res.status(201).json(newSchedule);
