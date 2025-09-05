@@ -49,7 +49,7 @@ nfc.on('reader', reader => {
       console.log('Current block data:', currentData.toString('utf8'));
 
       // Prepare data to write (exactly 16 bytes)
-      const newData = Buffer.from('5545-9052-9909'); // LAGAYAN NG CARD NO. (node nfc.js)
+      const newData = Buffer.from('1234-2233-1011'); // LAGAYAN NG CARD NO. (node nfc.js)
 
       // Write new data
       await writeBlock(reader, blockToAccess, newData);

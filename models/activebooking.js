@@ -5,8 +5,8 @@ const ActiveBookingSchema = new mongoose.Schema({
   bookingId: { type: String, required: true },
   departureLocation: { type: String, required: true },
   arrivalLocation: { type: String, required: true },
-  departDate: { type: Date, required: true },
-  departTime: { type: String, required: true },
+  departDate: { type: Date },
+  departTime: { type: String },
   passengers: [{
   name: { type: String, required: true },
   contact: { type: String, required: true }

@@ -1,58 +1,122 @@
 import express from 'express';
 import ActiveBookingModel from '../../models/activebooking.js';
-
+import UserModel from '../../models/superAdminModels/saAdmin.model.js';
+import { isUser } from '../../middleware/verifyToken.js';
 
 const router = express.Router();
-console.log('bookingRoutes loaded');
 
-router.get('/', async (req, res) => {
+router.get('/', isUser, async (req, res) => {
   try {
-    const bookings = await ActiveBookingModel.find().sort({ createdAt: -1 });
+    const user = req.user;
+    const { adminId } = req.query;
+
+    let bookings;
+
+    if (user.role === 'super admin') {
+      bookings = await ActiveBookingModel.find().sort({ createdAt: -1 });
+    } else if (user.role === 'admin') {
+      let userShippingLines = user.shippingLines;
+
+      if (!userShippingLines && adminId) {
+        const dbUser = await UserModel.findOne({ adminId });
+        if (dbUser) {
+          userShippingLines = dbUser.shippingLines;
+        }
+      }
+
+      if (userShippingLines) {
+        bookings = await ActiveBookingModel.find({
+          shippingLine: userShippingLines
+        }).sort({ createdAt: -1 });
+      } else {
+        bookings = [];
+      }
+    } else {
+      bookings = [];
+    }
+
     res.json(bookings);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch bookings.' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', isUser, async (req, res) => {
   try {
+    const user = req.user;
+
+    if (user.role !== 'super admin' && user.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized to create bookings' });
+    }
+
     const newBooking = new ActiveBookingModel(req.body);
-    const savedBooking = await newBooking.save();
-    res.status(201).json(savedBooking);
+    await newBooking.save();
+    res.status(201).json(newBooking);
   } catch (err) {
-    res.status(400).json({ error: 'Failed to create booking.' });
+    res.status(400).json({ error: err.message });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', isUser, async (req, res) => {
   try {
+    const user = req.user;
+
+    if (user.role !== 'super admin' && user.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized to update bookings' });
+    }
+
+    if (user.role === 'admin') {
+      const existingBooking = await ActiveBookingModel.findById(req.params.id);
+      if (existingBooking && existingBooking.shippingLine !== user.shippingLines) {
+        return res.status(403).json({
+          error: 'You can only update bookings for your assigned shipping line'
+        });
+      }
+    }
+
     const updatedBooking = await ActiveBookingModel.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      req.body,
       { new: true }
     );
+
     if (!updatedBooking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: 'Booking not found' });
     }
+
     res.json(updatedBooking);
   } catch (err) {
-    res.status(400).json({ error: 'Failed to update booking.' });
+    res.status(400).json({ error: err.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', isUser, async (req, res) => {
   try {
-    const deletedBooking = await ActiveBookingModel.findByIdAndDelete(req.params.id);
-    if (!deletedBooking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+    const user = req.user;
+
+    if (user.role !== 'super admin' && user.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized to delete bookings' });
     }
-    res.json({ message: 'Booking deleted.' });
+
+    if (user.role === 'admin') {
+      const existingBooking = await ActiveBookingModel.findById(req.params.id);
+      if (existingBooking && existingBooking.shippingLine !== user.shippingLines) {
+        return res.status(403).json({
+          error: 'You can only delete bookings for your assigned shipping line'
+        });
+      }
+    }
+
+    const deletedBooking = await ActiveBookingModel.findByIdAndDelete(req.params.id);
+
+    if (!deletedBooking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    res.json({ message: 'Booking deleted successfully' });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to delete booking.' });
+    res.status(500).json({ error: err.message });
   }
 });
 
 export default router;
-
-
-
