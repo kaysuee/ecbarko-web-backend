@@ -5,9 +5,10 @@ import { getAboutContent, updateAboutContent } from '../controllers/AboutControl
 import { getHomeContent, updateHomeContent } from '../controllers/HomeControllers.js';
 import { getContactContent, updateContactContent } from '../controllers/ContactUsController.js';
 import { getAboutEBCContent, updateAboutEBCContent } from '../controllers/AboutEBCController.js';
-import { getAboutAppContent, updateAboutAppContent } from '../controllers/AboutAppController.js'; // Add this import
+import { getAboutAppContent, updateAboutAppContent } from '../controllers/AboutAppController.js'; 
 import { sendAutomaticEmail } from '../controllers/EmailController.js';
 import { sendContactMessage } from '../controllers/ContactFormController.js';
+import { getFaqs, createFaq, updateFaq, deleteFaq } from '../controllers/FaqsController.js';
 
 const AdminRoutes = express.Router();
 
@@ -35,5 +36,11 @@ AdminRoutes.put('/aboutEBC', isSuperAdmin, updateAboutEBCContent);
 //add about app routes
 AdminRoutes.get('/aboutapp', isSuperAdmin, getAboutAppContent);
 AdminRoutes.put('/aboutapp', isSuperAdmin, updateAboutAppContent);
+
+//add faqs routes
+AdminRoutes.get('/faqs', isSuperAdmin, getFaqs);
+AdminRoutes.post('/faqs', isSuperAdmin, createFaq);
+AdminRoutes.put('/faqs/:id', isSuperAdmin, updateFaq);
+AdminRoutes.delete('/faqs/:id', isSuperAdmin, deleteFaq);
 
 export default AdminRoutes;
