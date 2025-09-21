@@ -1,20 +1,10 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import sgMail from "@sendgrid/mail";
+import dotenv from "dotenv";
 
-// Make sure environment variables are loaded
 dotenv.config();
 
-// Configure nodemailer with your email service credentials
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
-    // For App Password, remove the spaces when using it in code
-    pass: process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, '') : ''
-  }
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Email template for auto-reply
 const getEmailTemplate = () => {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -23,68 +13,39 @@ const getEmailTemplate = () => {
       <div style="text-align: center; margin-top: 30px;">
         <a href="https://yourwebsite.com" style="background-color: #013986; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Visit Our Website</a>
       </div>
-      <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">© ${new Date().getFullYear()} EcBarko. All rights reserved.</p>
+      <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">&copy; ${new Date().getFullYear()} EcBarko. All rights reserved.</p>
     </div>
   `;
 };
 
-// For debugging - log configuration without showing actual password
-console.log('Email configuration loaded:', {
-  user: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
-  passwordProvided: Boolean(process.env.EMAIL_PASSWORD)
-});
-
-// Send automatic reply email
 const sendAutomaticEmail = async (req, res) => {
   try {
     const { email } = req.body;
-
-    // Log request for debugging
-    console.log('Received email request:', {
-      body: req.body,
-      email: email
-    });
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Email options
-    const mailOptions = {
-      from: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
+    const msg = {
       to: email,
-      subject: 'Thank you for contacting EcBarko',
-      html: getEmailTemplate()
+      from: process.env.SENDGRID_FROM_EMAIL, // Must be verified sender in SendGrid
+      subject: "Thank you for contacting EcBarko",
+      html: getEmailTemplate(),
     };
 
-    console.log('Attempting to send email to:', email);
+    await sgMail.send(msg);
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
-    
-    console.log('Email sent successfully:', info);
-
-    res.status(200).json({ 
-      message: "Email sent successfully",
-      info: info.response
+    res.status(200).json({
+      success: true,
+      message: "Email sent successfully via SendGrid",
     });
   } catch (error) {
-    console.error("Email sending failed - FULL ERROR:", error);
-    
-    // Detailed error information for debugging
-    const errorDetails = {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      stack: error.stack
-    };
-    
-    console.error("Error details:", errorDetails);
-    
-    res.status(500).json({ 
-      message: "Failed to send email", 
-      error: error.message,
-      details: errorDetails
+    console.error("SendGrid Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to send email",
+      error: error.response?.body || error.message,
     });
   }
 };
