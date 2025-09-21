@@ -31,6 +31,7 @@ const sendAutomaticEmail = async (req, res) => {
       from: process.env.SENDGRID_FROM_EMAIL, // Must be verified sender in SendGrid
       subject: "Thank you for contacting EcBarko",
       html: getEmailTemplate(),
+      replyTo: "yourgmail@gmail.com",
     };
 
     await sgMail.send(msg);

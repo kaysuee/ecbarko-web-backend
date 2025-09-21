@@ -63,7 +63,7 @@ const sendContactMessage = async (req, res) => {
           <p style="color: #666; line-height: 1.6;">Here's a copy of your message:</p>
           <p style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #013986; margin-left: 20px;">${message}</p>
           <div style="text-align: center; margin-top: 30px;">
-            <a href="https://ecbarko.com" style="background-color: #013986; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Visit Our Website</a>
+            <a href="https://ecbarko-kr8b.onrender.com/" style="background-color: #013986; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Visit Our Website</a>
           </div>
           <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">© ${new Date().getFullYear()} EcBarko. All rights reserved.</p>
         </div>
