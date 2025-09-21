@@ -24,8 +24,8 @@ const sendContactMessage = async (req, res) => {
 
     // 1. Email to the admin/company
     const adminMsg = {
-      to: process.env.SENDGRID_FROM_EMAIL, // Your company email
-      from: process.env.SENDGRID_FROM_EMAIL, // Verified sender
+      to: process.env.EMAIL_USERNAME, 
+      from: process.env.SENDGRID_FROM_EMAIL, 
       subject: `New Contact Form Message from ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
