@@ -19,6 +19,7 @@ import EticketRoutes from './routes/eticketRoutes.js'
 import nfcRoutes from './routes/nfc.js'
 import dashboardRoutes from './routes/dashboard.js'
 import AnnouncementRoutes from './routes/announcement.js';
+import saFareRoutes from './routes/superAdminRoutes/saFareRoutes.js';
 
 import './controllers/NfcController.js'
 
@@ -57,6 +58,7 @@ app.use('/api/users', UserRoutes)
 app.use('/api/cards', CardRoutes)
 app.use('/api/vehicles', VehicleRoutes)
 app.use('/api/schedules', ScheduleRoutes)
+app.use('/api/sa-fares', saFareRoutes);
 app.use('/api/audittrails', AuditTrailsRoutes)
 app.use('/api/ticketclerks', TicketclerkRoutes)
 app.use('/api/sa-admins', saAdminRoutes)
