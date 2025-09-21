@@ -1,42 +1,31 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import sgMail from "@sendgrid/mail";
+import dotenv from "dotenv";
 
-// Make sure environment variables are loaded
 dotenv.config();
 
-// Configure nodemailer with your email service credentials
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
-    // For App Password, remove the spaces when using it
-    pass: process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, '') : ''
-  }
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Process Contact Form Submission
 const sendContactMessage = async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
     if (!name || !email || !message) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "All fields are required" 
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
       });
     }
 
-    // Log the contact request
-    console.log('Contact form submission:', {
+    console.log("Contact form submission:", {
       name,
       email,
-      message: message.substring(0, 30) + (message.length > 30 ? '...' : '')
+      message: message.substring(0, 30) + (message.length > 30 ? "..." : "")
     });
 
     // 1. Email to the admin/company
-    const adminMailOptions = {
-      from: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
-      to: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com', // The company email address
+    const adminMsg = {
+      to: process.env.SENDGRID_FROM_EMAIL, // Your company email
+      from: process.env.SENDGRID_FROM_EMAIL, // Verified sender
       subject: `New Contact Form Message from ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -47,14 +36,15 @@ const sendContactMessage = async (req, res) => {
           <p style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #013986; margin-left: 20px;">${message}</p>
           <p style="color: #888; font-size: 12px; margin-top: 30px;">© ${new Date().getFullYear()} EcBarko. All rights reserved.</p>
         </div>
-      `
+      `,
+      replyTo: "ecbarkoportal@gmail.com",
     };
 
     // 2. Confirmation email to the sender
-    const senderMailOptions = {
-      from: process.env.EMAIL_USERNAME || 'ecbarkoportal@gmail.com',
+    const senderMsg = {
       to: email,
-      subject: 'Thank you for contacting EcBarko',
+      from: process.env.SENDGRID_FROM_EMAIL,
+      subject: "Thank you for contacting EcBarko",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
           <h2 style="color: #4a4a4a; text-align: center;">Thank You for Contacting EcBarko!</h2>
@@ -71,23 +61,19 @@ const sendContactMessage = async (req, res) => {
     };
 
     // Send both emails
-    await Promise.all([
-      transporter.sendMail(adminMailOptions),
-      transporter.sendMail(senderMailOptions)
-    ]);
+    await Promise.all([sgMail.send(adminMsg), sgMail.send(senderMsg)]);
 
-    // Respond with success
-    res.status(200).json({ 
-      success: true, 
-      message: "Your message has been sent successfully!" 
+    res.status(200).json({
+      success: true,
+      message: "Your message has been sent successfully!"
     });
   } catch (error) {
-    console.error("Contact form email sending failed:", error);
-    
-    res.status(500).json({ 
-      success: false, 
+    console.error("SendGrid contact form error:", error);
+
+    res.status(500).json({
+      success: false,
       message: "Failed to send your message. Please try again later.",
-      error: error.message
+      error: error.response?.body || error.message
     });
   }
 };
