@@ -201,7 +201,7 @@ const forgotpassword = async (req, res) => {
       ? process.env.FRONTEND_URL 
       : 'http://localhost:5173';
       
-    const link = `${baseUrl}/resetpassword/${email}`;
+    const link = `${baseUrl}/reset-password/${email}`;
     
     await sendResetEmail(email, link);
 

@@ -11,9 +11,9 @@ const AuthRoutes = express.Router();
  
 AuthRoutes.post('/register', register);
 AuthRoutes.post('/login', Login);
-AuthRoutes.post('/forgotpassword', forgotpassword);
+AuthRoutes.post('/forgot-password', forgotpassword);
 AuthRoutes.post('/verifyOTP', verifyOtp);
-AuthRoutes.post('/resetPassword', savePassword);
+AuthRoutes.post('/reset-password', savePassword);
 AuthRoutes.post('/logout', Logout);
 AuthRoutes.post('/card', payment);
 AuthRoutes.post('/buyload/:cardNumber', buyload);

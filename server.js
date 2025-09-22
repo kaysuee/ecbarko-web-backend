@@ -38,7 +38,8 @@ app.use(cors({
     credentials: true,
     origin: [
         'http://localhost:5173', // For local development
-        'https://www.ecbarko.com' // Production frontend
+        'https://www.ecbarko.com',
+        'https://ecbarko.com', // Production frontend
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
