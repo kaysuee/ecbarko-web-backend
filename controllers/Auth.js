@@ -194,16 +194,27 @@ const forgotpassword = async (req, res) => {
     if (!user) {
       return res
         .status(404)
-        .json({ success: false, message: "Invalid credentials" });
+        .json({ success: false, message: "Account not found with this email address" });
     }
 
-    const link = `http://localhost:5173/resetpassword/${email}`;
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.FRONTEND_URL 
+      : 'http://localhost:5173';
+      
+    const link = `${baseUrl}/resetpassword/${email}`;
+    
     await sendResetEmail(email, link);
 
-    res.status(200).json({ success: true });
+    res.status(200).json({ 
+      success: true,
+      message: "Password reset link has been sent to your email" 
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal server error. Please try again later." 
+    });
   }
 };
 

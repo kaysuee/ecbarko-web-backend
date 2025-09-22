@@ -11,7 +11,7 @@ const getEmailTemplate = () => {
       <h2 style="color: #4a4a4a; text-align: center;">Thank You for Contacting EcBarko!</h2>
       <p style="color: #666; line-height: 1.6;">We've received your email inquiry and will get back to you as soon as possible. In the meantime, you might find answers to common questions in our FAQ section on our website.</p>
       <div style="text-align: center; margin-top: 30px;">
-        <a href="https://ecbarko.com" style="background-color: #013986; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Visit Our Website</a>
+        <a href="https://www.ecbarko.com" style="background-color: #013986; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Visit Our Website</a>
       </div>
       <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">&copy; ${new Date().getFullYear()} EcBarko. All rights reserved.</p>
     </div>
