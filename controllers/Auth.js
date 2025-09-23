@@ -61,44 +61,64 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    let user = await UserModel.findOne({ email, password });
+    // Try User (admin / super admin)
+    let user = await UserModel.findOne({ email });
     let clerk = false;
+
+    // If not found in User, try TicketClerk
     if (!user) {
-      user = await TicketClerkModel.findOne({ email, password });
+      user = await TicketClerkModel.findOne({ email });
       clerk = true;
     }
+
     if (!user) {
       return res
         .status(404)
+        .json({ success: false, message: "Account not found" });
+    }
+
+    // Check if deactivated (for clerks)
+    if (clerk && user.status === "deactivated") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Account is deactivated" });
+    }
+
+    // Compare password with bcrypt
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    //const ispassaowrdValid= await bcryptjs.compare(password,user.password)
-    //   if (!ispassaowrdValid) {
-    //     return res.status(404).json({success:false,message:"Invalid credentials"})
+    // Generate JWT
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
 
-    //   }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
     res.clearCookie("token");
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      maxAge: 36000000,
+      secure: false, // ⚠️ change to true in production with HTTPS
+      maxAge: 3600000, // 1 hour
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Login successfully",
-        user,
-        token,
-        clerk,
-      });
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user,
+      token,
+      clerk,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "internal server error" });
-    console.log(error);
+    console.error("❌ Login error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+
+
 const Logout = async (req, res) => {
   try {
     res.clearCookie("token");
