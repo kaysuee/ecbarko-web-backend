@@ -6,6 +6,7 @@ import {
   buyload, tapHistory, saveTapHistory 
 } from '../controllers/Auth.js';
 import { isUser, isAdminOrSuperAdmin } from '../middleware/verifyToken.js';
+import { setPassword } from '../controllers/Auth.js';
  
 const AuthRoutes = express.Router();
  
@@ -17,6 +18,7 @@ AuthRoutes.post('/reset-password', savePassword);
 AuthRoutes.post('/logout', Logout);
 AuthRoutes.post('/card', payment);
 AuthRoutes.post('/buyload/:cardNumber', buyload);
+AuthRoutes.post('/set-password', setPassword);
 
 AuthRoutes.get('/CheckUser', isUser, CheckUser);
 AuthRoutes.get('/card/:cardNumber', getCard);

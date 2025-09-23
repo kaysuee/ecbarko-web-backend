@@ -3,6 +3,7 @@ import CardModel from "../models/card.js";
 import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
 import ActiveBooking from "../models/activebooking.js";
+import Token from "../models/token.model.js";
 import TicketClerkModel from "../models/adminModels/ticketclerk.model.js";
 import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
@@ -178,6 +179,35 @@ const payment = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const setPassword = async (req, res) => {
+  const { token, password } = req.body;
+  try {
+    const tokenDoc = await Token.findOne({ token });
+    if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const user = await TicketClerkModel.findById(tokenDoc.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // hash password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    user.password = hashedPassword;
+    user.status = "active"; // ✅ account activated
+    await user.save();
+
+    // delete token after use
+    await Token.deleteOne({ _id: tokenDoc._id });
+
+    res.json({ success: true, message: "Password set successfully, account activated." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -387,4 +417,5 @@ export {
   buyload,
   tapHistory,
   saveTapHistory,
+  setPassword,
 };
