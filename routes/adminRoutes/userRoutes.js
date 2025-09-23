@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
     });
 
     // Send invitation email with link to frontend
-    const link = `${process.env.CLIENT_URL}/set-password/${token}`;
+    const link = `${process.env.FRONTEND_URL}/set-password/${token}`;
     await sendEmail(
       email,
       'Set up your account',
