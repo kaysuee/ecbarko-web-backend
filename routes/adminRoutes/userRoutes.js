@@ -16,26 +16,31 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { name, email, phone, type, status, lastActive } = req.body;
+
   try {
-    // Find the user with the highest numeric ID
-    const lastUser = await User.findOne().sort({ userId: -1 });
+    // Find the last user by numeric part of userId
+    const lastUser = await User.aggregate([
+      { $addFields: { numId: { $toInt: { $substr: ["$userId", 1, -1] } } } },
+      { $sort: { numId: -1 } },
+      { $limit: 1 }
+    ]);
+
     let nextNum = 1;
-    if (lastUser) {
-      // Extract numeric part from something like "U1005"
-      const match = lastUser.userId.match(/(\d+)$/);
-      const lastNum = match ? parseInt(match[1], 10) : 0;
-      nextNum = lastNum + 1;
+    if (lastUser.length > 0) {
+      nextNum = lastUser[0].numId + 1;
     }
-    const newUserId = `U${nextNum}`;  // rebuild with your prefix
+
+    // Always generate userId in Uxxxx format
+    const finalUserId = `U${String(nextNum).padStart(4, '0')}`;
 
     const newUser = new User({
-      userId: newUserId,
+      userId: finalUserId,
       name,
       email,
       phone,
       type,
-      status,
-      lastActive
+      status: status || 'active',
+      lastActive: lastActive || new Date().toISOString()
     });
 
     await newUser.save();
@@ -44,6 +49,7 @@ router.post('/', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
 
 
 router.put('/:id', async (req, res) => {
