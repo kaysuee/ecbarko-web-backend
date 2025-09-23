@@ -86,49 +86,75 @@ router.post('/', async (req, res) => {
 // Ticket clerk sets their password (from email link)
 router.post('/set-password', async (req, res) => {
   const { token, password } = req.body;
-  console.log('Set password request:', { token: token?.substring(0, 10) + '...', passwordLength: password?.length });
+  console.log('🔑 Set password request:', {
+    tokenPreview: token?.substring(0, 8) + '...',
+    passwordLength: password?.length
+  });
 
   try {
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+
+    // Find token doc for TicketClerk
     const tokenDoc = await Token.findOne({ 
       token,
       userType: 'TicketClerk'
     });
-    console.log('Token found:', tokenDoc ? 'Yes' : 'No');
-    
-    if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
-      console.log('Token invalid or expired');
-      return res.status(400).json({ error: 'Invalid or expired token' });
+
+    console.log('📌 Token found:', tokenDoc ? 'Yes' : 'No');
+
+    if (!tokenDoc) {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+
+    if (tokenDoc.expiresAt < Date.now()) {
+      console.log('⚠️ Token expired');
+      return res.status(400).json({ error: 'Token expired' });
     }
 
     // Hash password
     const saltRounds = 10;
-    const hashed = await bcrypt.hash(password, saltRounds);
-    console.log('Password hashed successfully, length:', hashed.length);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('✅ Password hashed, length:', hashedPassword.length);
 
+    // Update the clerk
     const updatedClerk = await TicketClerk.findByIdAndUpdate(
-      tokenDoc.userId, 
+      tokenDoc.userId,
       {
-        password: hashed,
+        password: hashedPassword,
         status: 'active'
       },
       { new: true }
     );
-    console.log('Clerk updated:', updatedClerk ? 'Yes' : 'No');
-    console.log('Updated clerk status:', updatedClerk?.status);
-    console.log('Updated clerk has password:', updatedClerk?.password ? 'Yes' : 'No');
 
+    if (!updatedClerk) {
+      console.log('❌ Clerk not found with id:', tokenDoc.userId);
+      return res.status(404).json({ error: 'Clerk not found' });
+    }
+
+    console.log('✅ Clerk updated:', {
+      id: updatedClerk._id.toString(),
+      email: updatedClerk.email,
+      status: updatedClerk.status,
+      hasPassword: !!updatedClerk.password
+    });
+
+    // Delete token so it can’t be reused
     await Token.deleteOne({ _id: tokenDoc._id });
-    console.log('Token deleted');
+    console.log('🗑️ Token deleted');
 
-    res.json({ 
+    res.json({
+      success: true,
       message: 'Password set successfully! You can now log in.',
-      clerkId: updatedClerk.clerkId 
+      clerkId: updatedClerk.clerkId
     });
   } catch (err) {
-    console.error('Set password error:', err);
-    res.status(400).json({ error: err.message });
+    console.error('❌ Set password error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 router.put('/:id', async (req, res) => {
   try {
