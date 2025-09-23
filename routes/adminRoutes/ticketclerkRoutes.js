@@ -1,7 +1,7 @@
 import express from 'express';
 import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
 import Token from '../../models/token.model.js';
-import sendEmail from '../../utils/sendEmail.js';
+import sendEmail from '../../utlis/sendEmail.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
