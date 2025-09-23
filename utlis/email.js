@@ -1,37 +1,49 @@
-import sgMail from "@sendgrid/mail";
-import dotenv from "dotenv";
-
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 dotenv.config();
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    debug: true,
+    port: 587,
+    secure: false,
+    auth: {
+        user: 'ecbarkoportal@gmail.com',
+        pass: 'ocfmgagwogsnxyue',
+    },
+});
 
-export const sendOtpEmail = async (email, otp) => {
-  const msg = {
+export const  sendOtpEmail = async (email, otp) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
     to: email,
-    from: process.env.SENDGRID_FROM_EMAIL, // Must be verified sender in SendGrid
     subject: 'ECBARKO OTP',
     text: `Your OTP code is: ${otp}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
-        <h2 style="color: #4a4a4a; text-align: center;">ECBARKO OTP Verification</h2>
-        <p style="color: #666; line-height: 1.6; text-align: center;">Your OTP code is:</p>
-        <div style="text-align: center; margin: 20px 0;">
-          <span style="background-color: #f0f0f0; padding: 15px 30px; font-size: 24px; font-weight: bold; border-radius: 5px; letter-spacing: 3px;">${otp}</span>
-        </div>
-        <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">&copy; ${new Date().getFullYear()} ECBARKO. All rights reserved.</p>
-      </div>
-    `,
-    replyTo: "ecbarkoportal@gmail.com",
   };
 
   try {
-    await sgMail.send(msg);
-    console.log(`OTP email sent to ${email}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`);
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    throw error;
+    console.error('Error sending email:', error);
   }
 };
+
+// export const sendResetEmail = async (email, reset) => {
+//   const mailOptions = {
+//     from: process.env.EMAIL_USER,
+//     to: email,
+//     subject: 'ECBARKO Email Reset',
+//     text: `Your reset link: ${reset}`,
+//   };
+
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Email sent to ${email}`);
+//   } catch (error) {
+//     console.error('Error sending email:', error);
+//   }
+// };
 
 export const sendResetEmail = async (email, reset) => {
   const htmlContent = `
@@ -238,49 +250,36 @@ export const sendResetEmail = async (email, reset) => {
     </html>
   `;
 
-  const msg = {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
     to: email,
-    from: process.env.SENDGRID_FROM_EMAIL, // Must be verified sender in SendGrid
     subject: 'ECBARKO Password Reset',
     text: `Your password reset link: ${reset}`,
     html: htmlContent,
-    replyTo: "ecbarkoportal@gmail.com",
   };
 
   try {
-    await sgMail.send(msg);
+    await transporter.sendMail(mailOptions);
     console.log(`Password reset email sent to ${email}`);
   } catch (error) {
     console.error('Error sending password reset email:', error);
-    throw error;
   }
 };
 
 export const sendResetPassword = async (email, Password) => {
-  const msg = {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
     to: email,
-    from: process.env.SENDGRID_FROM_EMAIL, // Must be verified sender in SendGrid
-    subject: 'ECBARKO New Password',
+    subject: 'ECBARKO Email Reset',
     text: `Your New Password: ${Password}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
-        <h2 style="color: #4a4a4a; text-align: center;">ECBARKO New Password</h2>
-        <p style="color: #666; line-height: 1.6;">Your new password is:</p>
-        <div style="text-align: center; margin: 20px 0;">
-          <span style="background-color: #f0f0f0; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 5px;">${Password}</span>
-        </div>
-        <p style="color: #666; line-height: 1.6;">Please change this password after logging in for security purposes.</p>
-        <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">&copy; ${new Date().getFullYear()} ECBARKO. All rights reserved.</p>
-      </div>
-    `,
-    replyTo: "ecbarkoportal@gmail.com",
   };
-
+  console.log(`Email sent to ${email}`);
   try {
-    await sgMail.send(msg);
-    console.log(`New password email sent to ${email}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`);
   } catch (error) {
-    console.error('Error sending new password email:', error);
-    throw error;
+    console.error('Error sending email:', error);
   }
 };
+
+
