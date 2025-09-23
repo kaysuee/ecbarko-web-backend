@@ -1,6 +1,10 @@
 import express from 'express';
 import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
-import { sendResetPassword } from '../../utlis/email.js';
+import Token from '../../models/token.model.js';
+import sendEmail from '../../utlis/sendEmail.js';
+import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+
 const router = express.Router();
 
 router.get('/', async (req, res) => {
@@ -12,11 +16,71 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Admin/SuperAdmin creates a ticket clerk (no password, inactive, sends invite email)
 router.post('/', async (req, res) => {
+  const { name, email, clerkId } = req.body;
+
   try {
-    const newClerk = new TicketClerk(req.body);
+    const newClerk = new TicketClerk({
+      name,
+      email,
+      clerkId,
+      password: null,
+      status: 'inactive'
+    });
     await newClerk.save();
-    res.status(201).json(newClerk);
+
+    // Generate one-time token
+    const token = crypto.randomBytes(32).toString('hex');
+    await Token.create({
+      userId: newClerk._id,
+      token,
+      expiresAt: Date.now() + 1000 * 60 * 60 // 1 hour
+    });
+
+    // Send invitation email with link to frontend
+    const link = `${process.env.FRONTEND_URL}/set-password/${token}`;
+    await sendEmail(
+      email,
+      'Set up your Ticket Clerk account',
+      `Hi ${name}, please click this link to set your password: ${link}`,
+      `<p>Hi ${name},</p>
+       <p>Your Ticket Clerk account has been created. Please click the link below to set your password:</p>
+       <p><strong>Clerk ID:</strong> ${clerkId}</p>
+       <a href="${link}">Set Password</a>
+       <p>This link will expire in 1 hour.</p>`
+    );
+
+    res.status(201).json({ 
+      message: 'Ticket Clerk registered, invitation email sent',
+      clerk: newClerk
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Ticket clerk sets their password (from email link)
+router.post('/set-password', async (req, res) => {
+  const { token, password } = req.body;
+
+  try {
+    const tokenDoc = await Token.findOne({ token });
+    if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    // Hash password
+    const hashed = await bcrypt.hash(password, 10);
+
+    await TicketClerk.findByIdAndUpdate(tokenDoc.userId, {
+      password: hashed,
+      status: 'active'
+    });
+
+    await Token.deleteOne({ _id: tokenDoc._id });
+
+    res.json({ message: 'Password set successfully! You can now log in.' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -49,6 +113,7 @@ router.put('/:id/status', async (req, res) => {
     }
 });  
 
+// Manual password reset by admin (existing functionality)
 router.put('/:id/password', async (req, res) => {
   const { password } = req.body;
 
@@ -65,6 +130,5 @@ router.put('/:id/password', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });  
-
 
 export default router;
