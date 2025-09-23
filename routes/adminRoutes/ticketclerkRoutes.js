@@ -93,7 +93,10 @@ router.post('/set-password', async (req, res) => {
 
   try {
     if (!token || !password) {
-      return res.status(400).json({ error: 'Token and password are required' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Token and password are required' 
+      });
     }
 
     // Find token doc for TicketClerk
@@ -105,12 +108,20 @@ router.post('/set-password', async (req, res) => {
     console.log('📌 Token found:', tokenDoc ? 'Yes' : 'No');
 
     if (!tokenDoc) {
-      return res.status(400).json({ error: 'Invalid token' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid or expired token' 
+      });
     }
 
     if (tokenDoc.expiresAt < Date.now()) {
       console.log('⚠️ Token expired');
-      return res.status(400).json({ error: 'Token expired' });
+      // Clean up expired token
+      await Token.deleteOne({ _id: tokenDoc._id });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Token expired. Please request a new invitation.' 
+      });
     }
 
     // Hash password
@@ -130,7 +141,10 @@ router.post('/set-password', async (req, res) => {
 
     if (!updatedClerk) {
       console.log('❌ Clerk not found with id:', tokenDoc.userId);
-      return res.status(404).json({ error: 'Clerk not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Clerk account not found' 
+      });
     }
 
     console.log('✅ Clerk updated:', {
@@ -140,18 +154,28 @@ router.post('/set-password', async (req, res) => {
       hasPassword: !!updatedClerk.password
     });
 
-    // Delete token so it can’t be reused
+    // Delete token so it can't be reused
     await Token.deleteOne({ _id: tokenDoc._id });
     console.log('🗑️ Token deleted');
 
-    res.json({
+    // Return consistent success response
+    res.status(200).json({
       success: true,
       message: 'Password set successfully! You can now log in.',
-      clerkId: updatedClerk.clerkId
+      clerkId: updatedClerk.clerkId,
+      clerk: {
+        name: updatedClerk.name,
+        email: updatedClerk.email,
+        clerkId: updatedClerk.clerkId,
+        status: updatedClerk.status
+      }
     });
   } catch (err) {
     console.error('❌ Set password error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error. Please try again.' 
+    });
   }
 });
 
