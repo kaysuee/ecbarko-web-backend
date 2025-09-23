@@ -1,7 +1,7 @@
 import express from 'express';
 import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
 import Token from '../../models/token.model.js';
-import sendEmail from '../../utlis/sendEmail.js';
+import sendEmail from '../../utils/sendEmail.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
@@ -18,9 +18,29 @@ router.get('/', async (req, res) => {
 
 // Admin/SuperAdmin creates a ticket clerk (no password, inactive, sends invite email)
 router.post('/', async (req, res) => {
+  console.log('Received request body:', req.body);
   const { name, email, clerkId } = req.body;
 
   try {
+    // Validate required fields
+    if (!name || !email || !clerkId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: name, email, and clerkId are required' 
+      });
+    }
+
+    // Check if clerk ID already exists
+    const existingClerk = await TicketClerk.findOne({ clerkId });
+    if (existingClerk) {
+      return res.status(400).json({ error: 'Clerk ID already exists' });
+    }
+
+    // Check if email already exists
+    const existingEmail = await TicketClerk.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
     const newClerk = new TicketClerk({
       name,
       email,
@@ -28,6 +48,7 @@ router.post('/', async (req, res) => {
       password: null,
       status: 'inactive'
     });
+    console.log('Creating clerk:', newClerk);
     await newClerk.save();
 
     // Generate one-time token
@@ -35,7 +56,8 @@ router.post('/', async (req, res) => {
     await Token.create({
       userId: newClerk._id,
       token,
-      expiresAt: Date.now() + 1000 * 60 * 60 // 1 hour
+      expiresAt: Date.now() + 1000 * 60 * 60, // 1 hour
+      userType: 'TicketClerk'
     });
 
     // Send invitation email with link to frontend
@@ -56,6 +78,7 @@ router.post('/', async (req, res) => {
       clerk: newClerk
     });
   } catch (err) {
+    console.error('Error creating ticket clerk:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -65,7 +88,10 @@ router.post('/set-password', async (req, res) => {
   const { token, password } = req.body;
 
   try {
-    const tokenDoc = await Token.findOne({ token });
+    const tokenDoc = await Token.findOne({ 
+      token,
+      userType: 'TicketClerk'
+    });
     if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
       return res.status(400).json({ error: 'Invalid or expired token' });
     }
@@ -124,7 +150,8 @@ router.put('/:id/password', async (req, res) => {
       { new: true }
     );
     console.log("Updated User:", updatedUser);
-    await sendResetPassword(updatedUser.email, password);
+    // Note: You'll need to import sendResetPassword if you want to keep this functionality
+    // await sendResetPassword(updatedUser.email, password);
     res.json(updatedUser);
   } catch (err) {
     res.status(400).json({ error: err.message });
