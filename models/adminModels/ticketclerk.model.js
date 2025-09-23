@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const ticketClerkSchema = new mongoose.Schema({
   name: String,
   clerkId: String,
-  email: String,
+  email: { type: String, required: true, unique: true },
   password: String,
   status: { type: String, enum: ['active', 'inactive', 'deactivated'], default: 'inactive' },
   reason: { type: String, default: '' },

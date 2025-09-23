@@ -82,6 +82,23 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
+router.post("/", async (req, res) => {
+  try {
+    // 🔑 Check if email already exists
+    const existing = await TicketClerk.findOne({ email: req.body.email });
+    if (existing) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    const clerk = new TicketClerk(req.body);
+    await clerk.save();
+    res.status(201).json(clerk);
+  } catch (err) {
+    console.error("Create clerk error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Update clerk info
 router.put('/:id', async (req, res) => {
   try {
