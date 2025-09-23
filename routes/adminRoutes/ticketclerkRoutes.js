@@ -19,8 +19,10 @@ router.post('/', async (req, res) => {
   try {
     // Create new clerk (no password, inactive)
     const newClerk = new TicketClerk({
-      ...req.body,
-      password: '',     // empty for now
+      name,
+      email,
+      clerkId,
+      password: null,    // 👈 match User flow
       status: 'inactive'
     });
     await newClerk.save();
