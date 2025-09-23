@@ -24,19 +24,35 @@ router.post('/', async (req, res) => {
   const { name, email, phone, type } = req.body;
 
   try {
-    // Generate new userId
+    // Generate new userId - safer approach
     const lastUser = await User.aggregate([
-      { $addFields: { numId: { $toInt: { $substr: ["$userId", 1, -1] } } } },
+      {
+        $match: {
+          userId: { $regex: /^U\d+$/ } // Only match valid format like U0001, U0002, etc.
+        }
+      },
+      {
+        $addFields: {
+          numId: {
+            $convert: {
+              input: { $substr: ["$userId", 1, -1] },
+              to: "int",
+              onError: 0 // Return 0 if conversion fails
+            }
+          }
+        }
+      },
       { $sort: { numId: -1 } },
       { $limit: 1 }
     ]);
+
     let nextNum = 1;
     if (lastUser.length > 0) {
       nextNum = lastUser[0].numId + 1;
     }
     const finalUserId = `U${String(nextNum).padStart(4, '0')}`;
 
-    // Save user without password
+    // Rest of your code remains the same...
     const newUser = new User({
       userId: finalUserId,
       name,
