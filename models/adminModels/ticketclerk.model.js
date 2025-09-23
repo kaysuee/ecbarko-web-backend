@@ -7,8 +7,8 @@ const ticketClerkSchema = new mongoose.Schema({
   password: String,
   status: { 
     type: String, 
-    enum: ['active', 'deactivated', 'inactive'], // Add 'inactive' here
-    default: 'inactive' // Set default to 'inactive' for new accounts
+    enum: ['active', 'deactivated', 'inactive'],
+    default: 'inactive' 
   },
   reason: { type: String, default: '' },
 }, {

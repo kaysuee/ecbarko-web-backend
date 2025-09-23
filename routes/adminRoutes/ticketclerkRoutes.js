@@ -1,7 +1,7 @@
 import express from 'express';
 import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
 import Token from '../../models/token.model.js';
-import sendEmail from '../../utlis/sendEmail.js';
+import sendEmail from '../../utils/sendEmail.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
@@ -86,28 +86,46 @@ router.post('/', async (req, res) => {
 // Ticket clerk sets their password (from email link)
 router.post('/set-password', async (req, res) => {
   const { token, password } = req.body;
+  console.log('Set password request:', { token: token?.substring(0, 10) + '...', passwordLength: password?.length });
 
   try {
     const tokenDoc = await Token.findOne({ 
       token,
       userType: 'TicketClerk'
     });
+    console.log('Token found:', tokenDoc ? 'Yes' : 'No');
+    
     if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
+      console.log('Token invalid or expired');
       return res.status(400).json({ error: 'Invalid or expired token' });
     }
 
     // Hash password
-    const hashed = await bcrypt.hash(password, 10);
+    const saltRounds = 10;
+    const hashed = await bcrypt.hash(password, saltRounds);
+    console.log('Password hashed successfully, length:', hashed.length);
 
-    await TicketClerk.findByIdAndUpdate(tokenDoc.userId, {
-      password: hashed,
-      status: 'active'
-    });
+    const updatedClerk = await TicketClerk.findByIdAndUpdate(
+      tokenDoc.userId, 
+      {
+        password: hashed,
+        status: 'active'
+      },
+      { new: true }
+    );
+    console.log('Clerk updated:', updatedClerk ? 'Yes' : 'No');
+    console.log('Updated clerk status:', updatedClerk?.status);
+    console.log('Updated clerk has password:', updatedClerk?.password ? 'Yes' : 'No');
 
     await Token.deleteOne({ _id: tokenDoc._id });
+    console.log('Token deleted');
 
-    res.json({ message: 'Password set successfully! You can now log in.' });
+    res.json({ 
+      message: 'Password set successfully! You can now log in.',
+      clerkId: updatedClerk.clerkId 
+    });
   } catch (err) {
+    console.error('Set password error:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -144,16 +162,23 @@ router.put('/:id/password', async (req, res) => {
   const { password } = req.body;
 
   try {
+    // Hash the password before storing
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('Admin password reset - hashing password');
+
     const updatedUser = await TicketClerk.findOneAndUpdate(
       { clerkId: req.params.id },
-      { password },
+      { password: hashedPassword }, // Store hashed password
       { new: true }
     );
-    console.log("Updated User:", updatedUser);
+    console.log("Updated User:", updatedUser?.clerkId);
+    
     // Note: You'll need to import sendResetPassword if you want to keep this functionality
     // await sendResetPassword(updatedUser.email, password);
     res.json(updatedUser);
   } catch (err) {
+    console.error('Password reset error:', err);
     res.status(400).json({ error: err.message });
   }
 });  
