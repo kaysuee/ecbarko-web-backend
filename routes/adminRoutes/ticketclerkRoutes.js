@@ -26,6 +26,14 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
+    const lastClerk = await TicketClerk.findOne().sort({ createdAt: -1 });
+    let nextId = 1;
+    if (lastClerk && lastClerk.clerkId) {
+      const num = parseInt(lastClerk.clerkId.replace("TC", ""), 10);
+      if (!isNaN(num)) nextId = num + 1;
+    }
+    const clerkId = `TC${String(nextId).padStart(3, "0")}`;
+
     // create clerk without password
     const newClerk = new TicketClerk({
       name,
