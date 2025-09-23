@@ -30,6 +30,7 @@ router.post("/", async (req, res) => {
     const newClerk = new TicketClerk({
       name,
       email,
+      clerkId,
       status: "pending",
     });
     await newClerk.save();
