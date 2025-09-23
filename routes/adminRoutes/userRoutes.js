@@ -5,8 +5,8 @@ import { isAdminOrSuperAdmin } from '../../middleware/verifyToken.js';
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import Token from '../../models/token.model.js';   // <-- create this model (shown below)
-import sendEmail from '../../utils/sendEmail.js';
+import Token from '../../models/token.model.js'; 
+import sendEmail from '../../utlis/sendEmail.js';
 
 const router = express.Router();
 
