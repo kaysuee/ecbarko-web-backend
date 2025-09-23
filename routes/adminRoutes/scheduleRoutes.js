@@ -129,7 +129,7 @@ router.post('/', isUser, async (req, res) => {
       date,
       departureTime,
       arrivalTime,
-      arrivalDate: arrivalDate || "", // Only set if provided
+      arrivalDate: arrivalDate || null, 
       from,
       to,
       shippingLines,

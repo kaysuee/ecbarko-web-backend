@@ -5,6 +5,7 @@ const scheduleSchema = new mongoose.Schema({
   date: { type: String, required: true },
   departureTime: { type: String, required: true },
   arrivalTime: { type: String, required: true },
+  arrivalDate: { type: Date, default: null },
   from: { type: String, required: true },
   to: { type: String, required: true },
   shippingLines: { type: String, required: true },
