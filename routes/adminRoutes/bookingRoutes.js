@@ -49,6 +49,8 @@ router.post('/', isUser, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to create bookings' });
     }
 
+    console.log("Incoming booking body:", req.body);
+
     const newBooking = new ActiveBookingModel(req.body);
     await newBooking.save();
     res.status(201).json(newBooking);

@@ -52,6 +52,8 @@ router.get('/', isUser, async (req, res) => {
   }
 });
 
+// Replace your POST route with this improved version:
+
 router.post('/', isUser, async (req, res) => {
   try {
     const user = req.user;
@@ -59,17 +61,120 @@ router.post('/', isUser, async (req, res) => {
     if (user.role !== 'super admin' && user.role !== 'admin') {
       return res.status(403).json({ error: 'Unauthorized to create schedules' });
     }
+
     console.log('Creating schedule with data:', req.body);
-    const newSchedule = new Schedule(req.body);
+    console.log('User creating schedule:', { 
+      id: user._id, 
+      role: user.role, 
+      shippingLines: user.shippingLines 
+    });
+
+    const {
+      schedcde,
+      date,
+      departureTime,
+      arrivalTime,
+      arrivalDate,
+      from,
+      to,
+      shippingLines,
+      passengerCapacity,
+      passengerBooked,
+      vehicleCapacity,
+      vehicleBooked
+    } = req.body;
+
+    // Validation
+    if (!schedcde || !date || !departureTime || !arrivalTime || !from || !to || !shippingLines) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['schedcde', 'date', 'departureTime', 'arrivalTime', 'from', 'to', 'shippingLines'],
+        received: req.body
+      });
+    }
+
+    // Validate number fields
+    const numericFields = {
+      passengerCapacity: passengerCapacity || 200,
+      passengerBooked: passengerBooked || 0,
+      vehicleCapacity: vehicleCapacity || 50,
+      vehicleBooked: vehicleBooked || 0
+    };
+
+    // Ensure all numeric fields are valid numbers
+    for (const [field, value] of Object.entries(numericFields)) {
+      if (isNaN(value) || value < 0) {
+        return res.status(400).json({ 
+          error: `Invalid ${field}: must be a non-negative number`,
+          value: value
+        });
+      }
+    }
+
+    // Check if booked doesn't exceed capacity
+    if (numericFields.passengerBooked > numericFields.passengerCapacity) {
+      return res.status(400).json({ 
+        error: 'Passengers booked cannot exceed passenger capacity' 
+      });
+    }
+
+    if (numericFields.vehicleBooked > numericFields.vehicleCapacity) {
+      return res.status(400).json({ 
+        error: 'Vehicles booked cannot exceed vehicle capacity' 
+      });
+    }
+
+    const newSchedule = new Schedule({
+      schedcde,
+      date,
+      departureTime,
+      arrivalTime,
+      arrivalDate: arrivalDate || undefined, // Only set if provided
+      from,
+      to,
+      shippingLines,
+      passengerCapacity: numericFields.passengerCapacity,
+      passengerBooked: numericFields.passengerBooked,
+      vehicleCapacity: numericFields.vehicleCapacity,
+      vehicleBooked: numericFields.vehicleBooked
+    });
+
+    console.log('About to save schedule:', newSchedule);
     await newSchedule.save();
+    
+    console.log('Schedule saved successfully:', newSchedule._id);
     res.status(201).json(newSchedule);
   } catch (err) {
     console.error('Schedule creation error:', err);
-    res.status(400).json({ error: err.message });
+    
+    // Better error handling
+    if (err.name === 'ValidationError') {
+      const validationErrors = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: validationErrors,
+        receivedData: req.body
+      });
+    }
+    
+    if (err.code === 11000) {
+      return res.status(400).json({ 
+        error: 'Duplicate schedule code',
+        schedcde: req.body.schedcde
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: err.message
+    });
   }
 });
 
+///
+
 router.put('/:id', isUser, async (req, res) => {
+  console.log('DEBUG PUT /api/schedules/:id BODY:', JSON.stringify(req.body));
   try {
     const user = req.user;
     
@@ -86,15 +191,44 @@ router.put('/:id', isUser, async (req, res) => {
       }
     }
     
-    const updatedSchedule = await Schedule.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
-      { new: true }
-    );
-    
-    if (!updatedSchedule) {
-      return res.status(404).json({ error: 'Schedule not found' });
-    }
+    const {
+      schedcde,
+      date,
+      departureTime,
+      arrivalTime,
+      arrivalDate,
+      from,
+      to,
+      shippingLines,
+      passengerCapacity,
+      passengerBooked,
+      vehicleCapacity,
+      vehicleBooked
+    } = req.body;
+    const updateFields = {
+  schedcde,
+  date,
+  departureTime,
+  arrivalTime,
+  from,
+  to,
+  shippingLines,
+  passengerCapacity,
+  passengerBooked,
+  vehicleCapacity,
+  vehicleBooked
+};
+
+if (arrivalDate !== undefined) {
+  updateFields.arrivalDate = arrivalDate;
+}
+
+      console.log('DEBUG updateFields for PUT:', updateFields);
+      const updatedSchedule = await Schedule.findByIdAndUpdate(
+        req.params.id,
+        updateFields,
+        { new: true }
+      );
     
     res.json(updatedSchedule);
   } catch (err) {
