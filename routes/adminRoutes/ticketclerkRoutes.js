@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
       userId: newClerk._id,
       token,
       expiresAt: Date.now() + 1000 * 60 * 60, // 1 hour
-      userType: 'TicketClerk'
+      // userType: 'TicketClerk'
     });
 
     // Send invitation email with link to frontend
@@ -99,7 +99,7 @@ router.post('/set-password', async (req, res) => {
     // Find token doc for TicketClerk
     const tokenDoc = await Token.findOne({ 
       token,
-      userType: 'TicketClerk'
+      // userType: 'TicketClerk'
     });
 
     console.log('📌 Token found:', tokenDoc ? 'Yes' : 'No');
