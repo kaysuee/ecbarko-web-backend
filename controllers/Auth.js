@@ -60,45 +60,23 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // First try to find user by email only
-    let user = await UserModel.findOne({ email });
+    let user = await UserModel.findOne({ email, password });
     let clerk = false;
-    
     if (!user) {
-      user = await TicketClerkModel.findOne({ email });
+      user = await TicketClerkModel.findOne({ email, password });
       clerk = true;
     }
-    
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Check if user has a password set
-    if (!user.password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Account setup incomplete. Please check your email for setup instructions." 
-      });
-    }
+    //const ispassaowrdValid= await bcryptjs.compare(password,user.password)
+    //   if (!ispassaowrdValid) {
+    //     return res.status(404).json({success:false,message:"Invalid credentials"})
 
-    // Compare password using bcrypt
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Invalid credentials" });
-    }
-
-    // Check if ticket clerk account is active
-    if (clerk && user.status !== 'active') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Account is not active. Please contact administrator." 
-      });
-    }
-
+    //   }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
     res.clearCookie("token");
     res.cookie("token", token, {
@@ -106,21 +84,20 @@ const Login = async (req, res) => {
       secure: false,
       maxAge: 36000000,
     });
-    
-    res.status(200).json({
-      success: true,
-      message: "Login successfully",
-      user,
-      token,
-      clerk,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Login successfully",
+        user,
+        token,
+        clerk,
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(error);
   }
 };
-
-
 const Logout = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -255,38 +232,16 @@ const savePassword = async (req, res) => {
 
   try {
     let user = await UserModel.findOne({ email });
-    console.log("User found:", user ? "Yes" : "No");
-    
+    console.log("here", user);
     if (!user) {
       user = await TicketClerkModel.findOne({ email });
-      console.log("Ticket clerk found:", user ? "Yes" : "No");
     }
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
-    }
-
-    // Hash password before saving
-    const hashedPassword = await bcryptjs.hash(password, 10);
-    console.log("Password hashed successfully");
-    
-    user.password = hashedPassword;
-    
-    // If it's a ticket clerk, also set status to active
-    if (user.clerkId) {
-      user.status = 'active';
-      console.log("Setting ticket clerk status to active");
-    }
-    
+    user.password = password;
     await user.save();
-    console.log("User saved successfully");
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Save password error:", error);
+    console.error(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
