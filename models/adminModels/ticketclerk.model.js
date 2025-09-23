@@ -5,7 +5,7 @@ const ticketClerkSchema = new mongoose.Schema({
   clerkId: String,
   email: String,
   password: String,
-  status: { type: String, enum: ['active', 'deactivated'], default: 'active' },
+  status: { type: String, enum: ['active', 'inactive', 'deactivated'], default: 'inactive' },
   reason: { type: String, default: '' },
 }, {
   timestamps: true,
