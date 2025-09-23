@@ -129,7 +129,7 @@ router.post('/', isUser, async (req, res) => {
       date,
       departureTime,
       arrivalTime,
-      arrivalDate: arrivalDate || undefined, // Only set if provided
+      arrivalDate: arrivalDate || "", // Only set if provided
       from,
       to,
       shippingLines,
@@ -219,7 +219,7 @@ router.put('/:id', isUser, async (req, res) => {
   vehicleBooked
 };
 
-if (arrivalDate !== undefined) {
+if (arrivalDate !== "") {
   updateFields.arrivalDate = arrivalDate;
 }
 
