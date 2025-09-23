@@ -1,9 +1,9 @@
 import express from 'express';
-import TicketClerk from '../models/adminModels/ticketclerk.model.js';
-import Token from '../models/token.model.js';
+import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
+import Token from '../../models/token.model.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import sendEmail from '../utlis/sendEmail.js';
+import sendEmail from '../../utlis/sendEmail.js';
 
 const router = express.Router();
 
