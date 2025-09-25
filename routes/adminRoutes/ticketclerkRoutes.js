@@ -4,6 +4,7 @@ import Token from '../../models/token.model.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import sendEmail from '../../utlis/sendEmail.js';
+import UserModel from '../../models/user.js';
 
 const router = express.Router();
 
@@ -85,8 +86,12 @@ router.post('/set-password', async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     // 🔑 Check if email already exists
-    const existing = await TicketClerk.findOne({ email: req.body.email });
-    if (existing) {
+    const email = req.body.email;
+    const existsInClerks = await TicketClerk.findOne({ email });
+    const existsInUsers = await UserModel.findOne({ email });
+    // const existsInAdmins = await SAAdmin.findOne({ email }); // Import SAAdmin if needed
+
+    if (existsInClerks || existsInUsers || existsInAdmins) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
