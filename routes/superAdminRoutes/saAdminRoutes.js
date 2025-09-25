@@ -1,6 +1,9 @@
 import express from "express";
 import SAAdmin from "../../models/superAdminModels/saAdmin.model.js";
+import Token from "../../models/token.model.js";
+import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
+import sendEmail from '../../utlis/sendEmail.js';
 
 const router = express.Router();
 
@@ -13,11 +16,12 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Create new admin (inactive, sends invitation email)
 router.post("/", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email } = req.body; // Remove password from required fields
 
-    if (!name || !email || !password) {
+    if (!name || !email) {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
@@ -26,8 +30,8 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Email already exists." });
     }
 
+    // Generate adminId
     const lastAdmin = await SAAdmin.findOne().sort({ adminId: -1 });
-
     let newAdminId = 'A101'; 
     if (lastAdmin && lastAdmin.adminId) {
       const lastIdNum = parseInt(lastAdmin.adminId.slice(1));
@@ -35,20 +39,68 @@ router.post("/", async (req, res) => {
       newAdminId = `A${nextIdNum}`;
     }
 
-    const hashedPassword = bcryptjs.hashSync(password, 10);
-
+    // Create new admin without password (inactive status)
     const newAdmin = new SAAdmin({
       name,
       email,
-      password: hashedPassword,
+      password: null, // No password initially
       role: "admin",
-      status: "active",
+      status: "inactive", // Start as inactive
       adminId: newAdminId
     });
 
     await newAdmin.save();
-    res.status(201).json(newAdmin);
+
+    // Generate one-time token
+    const token = crypto.randomBytes(32).toString('hex');
+    await Token.create({
+      userId: newAdmin._id,
+      token,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24 // 24 hours for admins
+    });
+
+    // Send invitation email with link
+    const link = `${process.env.FRONTEND_URL}/set-password/admin/${token}`;
+    await sendEmail(
+      email,
+      'Set up your Admin account',
+      `Hi ${name}, please click this link to set your password and activate your admin account: ${link}`,
+      `<p>Hi ${name},</p>
+       <p>You have been invited to join as an Admin. Please click the link below to set your password and activate your account:</p>
+       <a href="${link}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Password</a>
+       <p>This link will expire in 24 hours.</p>`
+    );
+
+    res.status(201).json({ message: 'Admin registered, invitation email sent' });
   } catch (err) {
+    console.error("Create admin error:", err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Admin sets password (from email link)
+router.post('/set-password', async (req, res) => {
+  const { token, password } = req.body;
+
+  try {
+    const tokenDoc = await Token.findOne({ token });
+    if (!tokenDoc || tokenDoc.expiresAt < Date.now()) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+
+    await SAAdmin.findByIdAndUpdate(tokenDoc.userId, {
+      password: hashedPassword,
+      status: 'active', // Activate the account
+      role: 'admin'
+    });
+
+    await Token.deleteOne({ _id: tokenDoc._id });
+
+    res.json({ message: 'Password set successfully! You can now log in.' });
+  } catch (err) {
+    console.error('Set password error:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -59,6 +111,17 @@ router.put("/:id", async (req, res) => {
 
     if (Object.keys(updateFields).length === 0) {
       return res.status(400).json({ error: "No data to update." });
+    }
+
+    // Check if email already exists (excluding current admin)
+    if (updateFields.email) {
+      const existingAdmin = await SAAdmin.findOne({ 
+        email: updateFields.email, 
+        _id: { $ne: req.params.id } 
+      });
+      if (existingAdmin) {
+        return res.status(400).json({ error: "Email already exists." });
+      }
     }
 
     const updatedAdmin = await SAAdmin.findByIdAndUpdate(
@@ -77,6 +140,33 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Update admin password (for super admin password reset)
+router.put('/:adminId/password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { adminId } = req.params;
+
+    // Hash the new password
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+
+    // Find by adminId field, not by _id
+    const updated = await SAAdmin.findOneAndUpdate(
+      { adminId: adminId },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Password update error:', err);
+    res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
 router.delete("/:id", async (req, res) => {
   try {
     const deletedAdmin = await SAAdmin.findByIdAndDelete(req.params.id);
@@ -90,6 +180,5 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 export default router;
