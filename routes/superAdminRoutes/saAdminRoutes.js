@@ -17,11 +17,12 @@ router.get("/", async (req, res) => {
 });
 
 // Create new admin (inactive, sends invitation email)
+// Create new admin (inactive, sends invitation email)
 router.post("/", async (req, res) => {
   try {
-    const { name, email } = req.body; // Remove password from required fields
+    const { name, email, shippingLines } = req.body; // ✅ include shippingLines
 
-    if (!name || !email) {
+    if (!name || !email || !shippingLines) {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
@@ -39,14 +40,15 @@ router.post("/", async (req, res) => {
       newAdminId = `A${nextIdNum}`;
     }
 
-    // Create new admin without password (inactive status)
+    // Create new admin
     const newAdmin = new SAAdmin({
       name,
       email,
-      password: null, // No password initially
+      password: null,
       role: "admin",
-      status: "inactive", // Start as inactive
-      adminId: newAdminId
+      status: "inactive",
+      adminId: newAdminId,
+      shippingLines // ✅ include shippingLines here
     });
 
     await newAdmin.save();
@@ -56,10 +58,9 @@ router.post("/", async (req, res) => {
     await Token.create({
       userId: newAdmin._id,
       token,
-      expiresAt: Date.now() + 1000 * 60 * 60 * 24 // 24 hours for admins
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24
     });
 
-    // Send invitation email with link
     const link = `${process.env.FRONTEND_URL}/set-password/admin/${token}`;
     await sendEmail(
       email,
@@ -77,6 +78,7 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
 
 // Admin sets password (from email link)
 router.post('/set-password', async (req, res) => {
