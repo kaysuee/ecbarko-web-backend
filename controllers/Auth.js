@@ -61,30 +61,24 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    let user = await UserModel.findOne({ email });
+    let user = await UserModel.findOne({ email, password });
     let clerk = false;
-
-    // Try ticket clerk if not found in UserModel
     if (!user) {
-      user = await TicketClerkModel.findOne({ email });
+      user = await TicketClerkModel.findOne({ email, password });
       clerk = true;
     }
     if (!user) {
-      return res.status(404).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Check account status (optional, but recommended)
-    if (user.status && user.status !== 'active') {
-      return res.status(403).json({ success: false, message: "Account not active" });
-    }
+    //const ispassaowrdValid= await bcryptjs.compare(password,user.password)
+    //   if (!ispassaowrdValid) {
+    //     return res.status(404).json({success:false,message:"Invalid credentials"})
 
-    // Check password using bcryptjs
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(404).json({ success: false, message: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET)
+    //   }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
     res.clearCookie("token");
     res.cookie("token", token, {
       httpOnly: true,
