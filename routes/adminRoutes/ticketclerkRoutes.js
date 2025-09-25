@@ -22,13 +22,21 @@ router.post('/', async (req, res) => {
   const { name, email, clerkId } = req.body;
 
   try {
+    // Check if email already exists in TicketClerk collection
+    const existsInClerks = await TicketClerk.findOne({ email });
+    
+    if (existsInClerks) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
     // Create new clerk
     const newClerk = new TicketClerk({
       name,
       email,
       clerkId,
       password: null,
-      status: 'inactive'
+      status: 'inactive',
+      role: 'ticket clerk'  // Add role field
     });
     await newClerk.save();
 
@@ -53,6 +61,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Clerk registered, invitation email sent' });
   } catch (err) {
+    console.error("Create clerk error:", err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -71,7 +80,8 @@ router.post('/set-password', async (req, res) => {
 
     await TicketClerk.findByIdAndUpdate(tokenDoc.userId, {
       password: hashed,
-      status: 'active'
+      status: 'active',
+      role: 'ticket clerk'  // Ensure role is set when activating
     });
 
     await Token.deleteOne({ _id: tokenDoc._id });
@@ -82,32 +92,52 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
-  try {
-    // 🔑 Check if email already exists
-    const email = req.body.email;
-    const existsInClerks = await TicketClerk.findOne({ email });
-
-    if (existsInClerks || existsInUsers || existsInAdmins) {
-      return res.status(400).json({ error: "Email already exists" });
-    }
-
-    const clerk = new TicketClerk(req.body);
-    await clerk.save();
-    res.status(201).json(clerk);
-  } catch (err) {
-    console.error("Create clerk error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
 // Update clerk info
 router.put('/:id', async (req, res) => {
   try {
+    // Check if email already exists (excluding current clerk)
+    if (req.body.email) {
+      const existsInClerks = await TicketClerk.findOne({ 
+        email: req.body.email, 
+        _id: { $ne: req.params.id } 
+      });
+      
+      if (existsInClerks) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+    }
+
     const updated = await TicketClerk.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Update clerk password (for admin password reset)
+router.put('/:clerkId/password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { clerkId } = req.params;
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Find by clerkId field, not by _id
+    const updated = await TicketClerk.findOneAndUpdate(
+      { clerkId: clerkId },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Ticket clerk not found' });
+    }
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Password update error:', err);
+    res.status(500).json({ error: 'Failed to update password' });
   }
 });
 

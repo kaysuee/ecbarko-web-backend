@@ -135,6 +135,10 @@ const Login = async (req, res) => {
       clerk,
     });
     
+    console.log("Login successful for:", user.email);
+    console.log("Is clerk:", clerk);
+    console.log("User type:", clerk ? "Ticket Clerk" : "Admin");
+    
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ success: false, message: "Internal server error" });
