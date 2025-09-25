@@ -9,7 +9,6 @@ import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { sendOtpEmail, sendResetEmail } from "../utlis/email.js";
 import Taphistory from "../models/tapHistory.js";
-import bcryptjs from "bcryptjs";
 
 const register = async (req, res) => {
   try {
@@ -88,8 +87,15 @@ const Login = async (req, res) => {
 
     let isPasswordValid = false;
 
+    // Check if password exists
+    if (!user.password) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
     // Check if password is hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
-    if (user.password && user.password.startsWith('$2')) {
+    if (user.password.startsWith('$2')) {
       // Password is hashed - use bcrypt compare
       isPasswordValid = await bcryptjs.compare(password, user.password);
     } else {
@@ -98,10 +104,11 @@ const Login = async (req, res) => {
       
       // Auto-upgrade to hashed password for security
       if (isPasswordValid) {
+        console.log(`Auto-upgrading password for user: ${user.email}`);
         const hashedPassword = await bcryptjs.hash(password, 10);
         user.password = hashedPassword;
         await user.save();
-        console.log(`Auto-upgraded password for user: ${user.email}`);
+        console.log(`Password upgraded successfully for: ${user.email}`);
       }
     }
 
@@ -109,7 +116,10 @@ const Login = async (req, res) => {
       return res.status(404).json({ success: false, message: "Invalid credentials" });
     }
 
+    // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    
+    // Clear existing cookie and set new one
     res.clearCookie("token");
     res.cookie("token", token, {
       httpOnly: true,
@@ -124,9 +134,10 @@ const Login = async (req, res) => {
       token,
       clerk,
     });
+    
   } catch (error) {
-    res.status(500).json({ success: false, message: "internal server error" });
-    console.log(error);
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
