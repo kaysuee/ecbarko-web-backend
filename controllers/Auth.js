@@ -61,23 +61,52 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    let user = await UserModel.findOne({ email, password });
+    // First try to find user in UserModel
+    let user = await UserModel.findOne({ email });
     let clerk = false;
+    
+    // If not found in UserModel, try TicketClerkModel
     if (!user) {
-      user = await TicketClerkModel.findOne({ email, password });
+      user = await TicketClerkModel.findOne({ email });
       clerk = true;
     }
+
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    //const ispassaowrdValid= await bcryptjs.compare(password,user.password)
-    //   if (!ispassaowrdValid) {
-    //     return res.status(404).json({success:false,message:"Invalid credentials"})
+    // Check if user account is active (for ticket clerks)
+    if (clerk && user.status !== 'active') {
+      return res
+        .status(403)
+        .json({ success: false, message: "Account is not active. Please check your email for activation instructions." });
+    }
 
-    //   }
+    let isPasswordValid = false;
+
+    // Check if password is hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
+    if (user.password && user.password.startsWith('$2')) {
+      // Password is hashed - use bcrypt compare
+      isPasswordValid = await bcryptjs.compare(password, user.password);
+    } else {
+      // Password is plain text - direct comparison
+      isPasswordValid = password === user.password;
+      
+      // Auto-upgrade to hashed password for security
+      if (isPasswordValid) {
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        user.password = hashedPassword;
+        await user.save();
+        console.log(`Auto-upgraded password for user: ${user.email}`);
+      }
+    }
+
+    if (!isPasswordValid) {
+      return res.status(404).json({ success: false, message: "Invalid credentials" });
+    }
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
     res.clearCookie("token");
     res.cookie("token", token, {
@@ -85,15 +114,14 @@ const Login = async (req, res) => {
       secure: false,
       maxAge: 36000000,
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Login successfully",
-        user,
-        token,
-        clerk,
-      });
+    
+    res.status(200).json({
+      success: true,
+      message: "Login successfully",
+      user,
+      token,
+      clerk,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: "internal server error" });
     console.log(error);
