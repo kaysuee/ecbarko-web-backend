@@ -7,6 +7,7 @@ const ticketClerkSchema = new mongoose.Schema({
   password: String,
   status: { type: String, enum: ['active', 'inactive', 'deactivated'], default: 'inactive' },
   reason: { type: String, default: '' },
+  role: { type: String, default: 'ticket clerk' },
 }, {
   timestamps: true,
 });
