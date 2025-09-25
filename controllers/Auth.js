@@ -9,6 +9,8 @@ import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { sendOtpEmail, sendResetEmail } from "../utlis/email.js";
 import Taphistory from "../models/tapHistory.js";
+import bcryptjs from "bcryptjs";
+
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
