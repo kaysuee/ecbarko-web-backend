@@ -4,6 +4,8 @@ import Token from '../../models/token.model.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import sendEmail from '../../utlis/sendEmail.js';
+import { isUser } from '../../middleware/verifyToken.js';
+import upload from '../../middleware/upload.js';
 
 const router = express.Router();
 
@@ -138,6 +140,93 @@ router.put('/:clerkId/password', async (req, res) => {
   } catch (err) {
     console.error('Password update error:', err);
     res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
+// Ticket clerk profile update endpoint
+router.post('/update-profile', isUser, upload.single("profileImage"), async (req, res) => {
+  try {
+    const { name } = req.body;
+    const userId = req.user._id;
+
+    console.log("=== Ticket Clerk Update Profile Request ===");
+    console.log("User ID:", userId);
+    console.log("Name:", name);
+    console.log("File uploaded:", req.file ? "Yes" : "No");
+    if (req.file) {
+      console.log("File details:", req.file);
+    }
+
+    const updateData = { name };
+    
+    if (req.file) {
+      // Construct the full URL to the uploaded image
+      const backendUrl = process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com';
+      updateData.profileImage = `${backendUrl}/uploads/${req.file.filename}`;
+      console.log("Profile image URL:", updateData.profileImage);
+    }
+
+    // Update ticket clerk profile
+    const updatedClerk = await TicketClerk.findByIdAndUpdate(
+      userId, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).select('-password'); // Don't send password back
+
+    if (!updatedClerk) {
+      console.log("Ticket clerk not found");
+      return res.status(404).json({ message: "Ticket clerk not found" });
+    }
+
+    console.log("Updated ticket clerk:", updatedClerk);
+    console.log("=== Update Complete ===");
+
+    res.status(200).json({ 
+      message: "Profile updated successfully",
+      user: updatedClerk 
+    });
+  } catch (err) {
+    console.error("=== Ticket Clerk Update Profile Error ===");
+    console.error("Error:", err);
+    res.status(500).json({ message: "Failed to update profile", error: err.message });
+  }
+});
+
+// Ticket clerk change password endpoint
+router.post('/change-password', isUser, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  try {
+    // Get user from token (set by isUser middleware)
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update user password directly on the user object
+    user.password = hashedNewPassword;
+    const updatedUser = await user.save();
+    
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser.toObject();
+    
+    res.status(200).json({ 
+      message: 'Password changed successfully',
+      user: userWithoutPassword
+    });
+  } catch (err) {
+    console.error('Ticket clerk password change error:', err);
+    res.status(500).json({ message: 'Failed to change password', error: err.message });
   }
 });
 

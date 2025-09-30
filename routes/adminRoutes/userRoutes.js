@@ -1,12 +1,13 @@
 import express from 'express';
 import User from '../../models/adminModels/userAccount.model.js';
 import Users from '../../models/superAdminModels/saAdmin.model.js';
-import { isAdminOrSuperAdmin } from '../../middleware/verifyToken.js';  
+import { isAdminOrSuperAdmin, isUser } from '../../middleware/verifyToken.js';  
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import Token from '../../models/token.model.js'; 
 import sendEmail from '../../utlis/sendEmail.js';
+import upload from "../../middleware/upload.js";
 
 const router = express.Router();
 
@@ -118,6 +119,72 @@ router.post('/set-password', async (req, res) => {
 });
 
 
+router.post(
+  "/update-profile",
+  isUser,
+  upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const { name } = req.body;
+      const userId = req.user._id;
+
+      console.log("=== Update Profile Request ===");
+      console.log("User ID:", userId);
+      console.log("Name:", name);
+      console.log("File uploaded:", req.file ? "Yes" : "No");
+      if (req.file) {
+        console.log("File details:", req.file);
+      }
+
+      const updateData = { name };
+      
+      if (req.file) {
+        // Construct the full URL to the uploaded image
+        const backendUrl = process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com';
+        updateData.profileImage = `${backendUrl}/uploads/${req.file.filename}`;
+        console.log("Profile image URL:", updateData.profileImage);
+      }
+
+      // Try updating in Users collection first (for super admin/admin)
+      let updatedUser = await Users.findByIdAndUpdate(
+        userId, 
+        updateData, 
+        { new: true, runValidators: true }
+      ).select('-password'); // Don't send password back
+
+      // If not found, try User collection (for regular users)
+      if (!updatedUser) {
+        updatedUser = await User.findByIdAndUpdate(
+          userId, 
+          updateData, 
+          { new: true, runValidators: true }
+        ).select('-password');
+      }
+
+      if (!updatedUser) {
+        console.log("User not found in either collection");
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      console.log("Updated user:", updatedUser);
+      console.log("=== Update Complete ===");
+
+      res.status(200).json({ 
+        message: "Profile updated successfully",
+        user: updatedUser 
+      });
+    } catch (err) {
+      console.error("=== Update Profile Error ===");
+      console.error("Error:", err);
+      console.error("Error message:", err.message);
+      console.error("Error stack:", err.stack);
+      res.status(500).json({ 
+        message: "Error updating profile", 
+        error: err.message 
+      });
+    }
+  }
+);
 
 router.put('/:id', async (req, res) => {
   try {
@@ -181,6 +248,44 @@ router.get('/stats', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching user stats', error: err });
+  }
+});
+
+// User change password endpoint
+router.post('/change-password', isUser, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  try {
+    // Get user from token (set by isUser middleware)
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update user password directly on the user object
+    user.password = hashedNewPassword;
+    const updatedUser = await user.save();
+    
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser.toObject();
+    
+    res.status(200).json({ 
+      message: 'Password changed successfully',
+      user: userWithoutPassword
+    });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ message: 'Failed to change password', error: err.message });
   }
 });
 

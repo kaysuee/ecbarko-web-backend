@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
       message: 'ShippingLines is required for users with role "admin"'
     }
   },
+  profileImage: { type: String, default: null },
 }, { timestamps: true });
 
 export default mongoose.model('Users', userSchema, 'users');
