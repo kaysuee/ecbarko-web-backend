@@ -4,6 +4,8 @@ import Token from '../../models/token.model.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import sendEmail from '../../utlis/sendEmail.js';
+import { isUser } from '../../middleware/verifyToken.js';
+import upload from "../../middleware/upload.js";
 
 const router = express.Router();
 
@@ -113,6 +115,35 @@ router.put('/:id', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+// Profile update endpoint for ticket clerks
+router.post(
+  "/update-profile",
+  isUser,
+  upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const { name } = req.body;
+      const userId = req.user._id; 
+
+      const updateData = { name };
+      if (req.file) {
+        updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
+      }
+      
+      const updatedUser = await TicketClerk.findByIdAndUpdate(userId, updateData, { new: true });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(200).json({ user: updatedUser });
+    } catch (err) {
+      console.error("Update profile error:", err);
+      res.status(500).json({ message: "Error updating profile", error: err.message });
+    }
+  }
+);
 
 // Update clerk password (for admin password reset)
 router.put('/:clerkId/password', async (req, res) => {

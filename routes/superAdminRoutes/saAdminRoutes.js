@@ -4,6 +4,8 @@ import Token from "../../models/token.model.js";
 import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import sendEmail from '../../utlis/sendEmail.js';
+import { isUser } from '../../middleware/verifyToken.js';
+import upload from "../../middleware/upload.js";
 
 const router = express.Router();
 
@@ -168,6 +170,35 @@ router.put('/:adminId/password', async (req, res) => {
     res.status(500).json({ error: 'Failed to update password' });
   }
 });
+
+// Profile update endpoint for super admins
+router.post(
+  "/update-profile",
+  isUser,
+  upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const { name } = req.body;
+      const userId = req.user._id; 
+
+      const updateData = { name };
+      if (req.file) {
+        updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
+      }
+      
+      const updatedUser = await SAAdmin.findByIdAndUpdate(userId, updateData, { new: true });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(200).json({ user: updatedUser });
+    } catch (err) {
+      console.error("Update profile error:", err);
+      res.status(500).json({ message: "Error updating profile", error: err.message });
+    }
+  }
+);
 
 router.delete("/:id", async (req, res) => {
   try {

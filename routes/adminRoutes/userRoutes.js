@@ -130,7 +130,6 @@ router.post(
 
       const updateData = { name };
       if (req.file) {
-        // Store the full URL in the database
         updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
       }
       
