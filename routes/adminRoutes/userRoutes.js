@@ -126,27 +126,62 @@ router.post(
   async (req, res) => {
     try {
       const { name } = req.body;
-      const userId = req.user._id; 
+      const userId = req.user._id;
+
+      console.log("=== Update Profile Request ===");
+      console.log("User ID:", userId);
+      console.log("Name:", name);
+      console.log("File uploaded:", req.file ? "Yes" : "No");
+      if (req.file) {
+        console.log("File details:", req.file);
+      }
 
       const updateData = { name };
+      
       if (req.file) {
-        updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
+        // Construct the full URL to the uploaded image
+        const backendUrl = process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com';
+        updateData.profileImage = `${backendUrl}/uploads/${req.file.filename}`;
+        console.log("Profile image URL:", updateData.profileImage);
       }
-      
-      let updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
-      
+
+      // Try updating in Users collection first (for super admin/admin)
+      let updatedUser = await Users.findByIdAndUpdate(
+        userId, 
+        updateData, 
+        { new: true, runValidators: true }
+      ).select('-password'); // Don't send password back
+
+      // If not found, try User collection (for regular users)
       if (!updatedUser) {
-        updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        updatedUser = await User.findByIdAndUpdate(
+          userId, 
+          updateData, 
+          { new: true, runValidators: true }
+        ).select('-password');
       }
 
       if (!updatedUser) {
+        console.log("User not found in either collection");
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.status(200).json({ user: updatedUser });
+      console.log("Updated user:", updatedUser);
+      console.log("=== Update Complete ===");
+
+      res.status(200).json({ 
+        message: "Profile updated successfully",
+        user: updatedUser 
+      });
     } catch (err) {
-      console.error("Update profile error:", err);
-      res.status(500).json({ message: "Error updating profile", error: err.message });
+      console.error("=== Update Profile Error ===");
+      console.error("Error:", err);
+      console.error("Error message:", err.message);
+      console.error("Error stack:", err.stack);
+      res.status(500).json({ 
+        message: "Error updating profile", 
+        error: err.message 
+      });
     }
   }
 );
