@@ -125,6 +125,12 @@ router.post(
   upload.single("profileImage"),
   async (req, res) => {
     try {
+      console.log("=== PROFILE UPDATE REQUEST ===");
+      console.log("User ID:", req.user._id);
+      console.log("User from middleware:", req.user);
+      console.log("Request body:", req.body);
+      console.log("File:", req.file);
+      
       const { name } = req.body;
       const userId = req.user._id; 
 
@@ -133,13 +139,18 @@ router.post(
         updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
       }
       
+      console.log("Update data:", updateData);
+      
       let updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
+      console.log("Updated in Users collection:", updatedUser);
       
       if (!updatedUser) {
         updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        console.log("Updated in User collection:", updatedUser);
       }
 
       if (!updatedUser) {
+        console.log("User not found in any collection");
         return res.status(404).json({ message: "User not found" });
       }
 

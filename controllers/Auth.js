@@ -174,7 +174,8 @@ const CheckUser = async (req, res) => {
       email: user.email,
       role: user.role,
       profileImage: user.profileImage,
-      collection: user.constructor.modelName
+      collection: user.constructor.modelName,
+      fullUser: user
     });
 
     res.status(200).json(user);
