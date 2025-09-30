@@ -1,5 +1,6 @@
 import UserModel from "../models/superAdminModels/saAdmin.model.js";
 import UserAccountModel from "../models/adminModels/userAccount.model.js";
+import BasicUserModel from "../models/user.js";
 import CardModel from "../models/card.js";
 import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
@@ -70,6 +71,11 @@ const Login = async (req, res) => {
     // If not found in UserModel, try UserAccountModel (admin)
     if (!user) {
       user = await UserAccountModel.findOne({ email });
+    }
+    
+    // If still not found, try BasicUserModel (users collection)
+    if (!user) {
+      user = await BasicUserModel.findOne({ email });
     }
     
     // If still not found, try TicketClerkModel

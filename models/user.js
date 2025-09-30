@@ -18,6 +18,18 @@ const userSechmea= new mongoose.Schema({
     password:{
         type:String,
         required:true
+    },
+    profileImage: {
+        type: String,
+        default: null
+    },
+    adminId: {
+        type: String,
+        default: null
+    },
+    status: {
+        type: String,
+        default: 'active'
     }
 },{timestamps:true})
 

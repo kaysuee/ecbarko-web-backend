@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../../models/adminModels/userAccount.model.js';
 import Users from '../../models/superAdminModels/saAdmin.model.js';
+import UserModel from '../../models/user.js';
 import { isAdminOrSuperAdmin, isUser } from '../../middleware/verifyToken.js';  
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
@@ -141,12 +142,20 @@ router.post(
       
       console.log("Update data:", updateData);
       
+      // Try to update in all collections
       let updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
-      console.log("Updated in Users collection:", updatedUser);
+      console.log("Updated in Users collection (Super Admin):", updatedUser);
       
+      // If not found, try Admin collection (User)
       if (!updatedUser) {
         updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
-        console.log("Updated in User collection:", updatedUser);
+        console.log("Updated in User collection (Admin):", updatedUser);
+      }
+      
+      // If still not found, try the basic users collection (UserModel)
+      if (!updatedUser) {
+        updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        console.log("Updated in UserModel collection (Basic Users):", updatedUser);
       }
 
       if (!updatedUser) {
