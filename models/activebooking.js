@@ -18,8 +18,8 @@ const ActiveBookingSchema = new mongoose.Schema({
   departurePort: { type: String, required: true },
   arrivalPort: { type: String, required: true },
   payment: { type: Number, required: true },
-  paymentMethod: { type: String, required: true, default: 'Cash' },
-  isPaid: { type: String, required: true, default: 'active' },
+  paymentMethod: { type: String, required: true, default: 'Card' },
+  isPaid: { type: String, required: true, default: 'false' }, //dapat ata false 'tos
   bookingDate: { type: String, required: true },
   
   passengerDetails: [{
