@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import Token from '../../models/token.model.js'; 
 import sendEmail from '../../utlis/sendEmail.js';
+import upload from "../middlewares/upload.js";
 
 const router = express.Router();
 
@@ -117,6 +118,29 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
+
+router.post("/update-profile", upload.single("profileImage"), async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    // Here you should get the logged-in user's ID (e.g. from JWT middleware)
+    const userId = req.user.id; // make sure req.user is set from auth middleware
+
+    const updateData = { name };
+    if (req.file) {
+      updateData.profileImage = "/uploads/" + req.file.filename;
+    }
+
+    const updatedUser = await Users.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+
+    res.status(200).json({ user: updatedUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating profile" });
+  }
+});
 
 
 router.put('/:id', async (req, res) => {

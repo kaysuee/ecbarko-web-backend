@@ -70,6 +70,7 @@ app.use('/api/bookings', BookingRoutes)
 app.use('/api/eticket', EticketRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/announcements', AnnouncementRoutes);
+app.use("/uploads", express.static("uploads"));
 
 app.get('/', (req, res) => {
     res.send('EcBarko Backend API is running!')
