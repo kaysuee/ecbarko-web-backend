@@ -272,12 +272,9 @@ router.post('/change-password', isUser, async (req, res) => {
     // Hash new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     
-    // Update user password
-    const updatedUser = await User.findByIdAndUpdate(
-      user._id,
-      { password: hashedNewPassword },
-      { new: true }
-    );
+    // Update user password directly on the user object
+    user.password = hashedNewPassword;
+    const updatedUser = await user.save();
     
     // Remove password from response
     const { password, ...userWithoutPassword } = updatedUser.toObject();
