@@ -1,7 +1,7 @@
 import express from 'express';
 import User from '../../models/adminModels/userAccount.model.js';
 import Users from '../../models/superAdminModels/saAdmin.model.js';
-import { isAdminOrSuperAdmin } from '../../middleware/verifyToken.js';  
+import { isAdminOrSuperAdmin, isUser } from '../../middleware/verifyToken.js';  
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
@@ -119,29 +119,34 @@ router.post('/set-password', async (req, res) => {
 });
 
 
-router.post("/update-profile", upload.single("profileImage"), async (req, res) => {
-  try {
-    const { name, email } = req.body;
+router.post(
+  "/update-profile",
+  isUser,
+  upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const { name } = req.body;
+      const userId = req.user._id; 
 
-    // Here you should get the logged-in user's ID (e.g. from JWT middleware)
-    const userId = req.user.id; // make sure req.user is set from auth middleware
+      const updateData = { name };
+      if (req.file) {
+        updateData.profileImage = "/uploads/" + req.file.filename;
+      }
+      
+      let updatedUser;
+      if (req.user.role === "ticketclerk") {
+        updatedUser = await TicketClerkModel.findByIdAndUpdate(userId, updateData, { new: true });
+      } else {
+        updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+      }
 
-    const updateData = { name };
-    if (req.file) {
-      updateData.profileImage = "/uploads/" + req.file.filename;
+      res.status(200).json({ user: updatedUser });
+    } catch (err) {
+      console.error("Update profile error:", err);
+      res.status(500).json({ message: "Error updating profile" });
     }
-
-    const updatedUser = await Users.findByIdAndUpdate(userId, updateData, {
-      new: true,
-    });
-
-    res.status(200).json({ user: updatedUser });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error updating profile" });
   }
-});
-
+);
 
 router.put('/:id', async (req, res) => {
   try {
