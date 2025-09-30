@@ -1,7 +1,6 @@
 import express from 'express';
 import User from '../../models/adminModels/userAccount.model.js';
 import Users from '../../models/superAdminModels/saAdmin.model.js';
-import UserModel from '../../models/user.js';
 import { isAdminOrSuperAdmin, isUser } from '../../middleware/verifyToken.js';  
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
@@ -126,19 +125,6 @@ router.post(
   upload.single("profileImage"),
   async (req, res) => {
     try {
-      console.log("=== PROFILE UPDATE REQUEST ===");
-      console.log("User ID:", req.user._id);
-      console.log("User from middleware:", req.user);
-      console.log("Request body:", req.body);
-      console.log("File:", req.file);
-      console.log("File details:", req.file ? {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size
-      } : "No file received");
-      
       const { name } = req.body;
       const userId = req.user._id; 
 
@@ -147,30 +133,16 @@ router.post(
         updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
       }
       
-      console.log("Update data:", updateData);
-      
-      // Try to update in all collections
       let updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
-      console.log("Updated in Users collection (Super Admin):", updatedUser);
       
-      // If not found, try Admin collection (User)
       if (!updatedUser) {
         updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
-        console.log("Updated in User collection (Admin):", updatedUser);
-      }
-      
-      // If still not found, try the basic users collection (UserModel)
-      if (!updatedUser) {
-        updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
-        console.log("Updated in UserModel collection (Basic Users):", updatedUser);
       }
 
       if (!updatedUser) {
-        console.log("User not found in any collection");
         return res.status(404).json({ message: "User not found" });
       }
 
-      console.log("Profile updated successfully:", updatedUser);
       res.status(200).json({ user: updatedUser });
     } catch (err) {
       console.error("Update profile error:", err);

@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   birthdate: String,
-  profileImage: String,
+  profileImageUrl: String,
   type: String,
   status: { type: String, default: 'active' },
   lastActive: String

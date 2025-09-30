@@ -1,8 +1,6 @@
 import jwt from 'jsonwebtoken';
 import UserModel from '../models/superAdminModels/saAdmin.model.js';  
-import UserAccountModel from '../models/adminModels/userAccount.model.js';
 import TicketClerkModel from '../models/adminModels/ticketclerk.model.js';
-import BasicUserModel from '../models/user.js';
 
 const getTokenFromRequest = (req) => {
     let token = req.cookies.token;
@@ -77,13 +75,7 @@ const isUser = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         let user = await UserModel.findById(decoded.userId);
         if (!user) {
-            user = await UserAccountModel.findById(decoded.userId);
-        }
-        if (!user) {
             user = await TicketClerkModel.findById(decoded.userId);
-        }
-        if (!user) {
-            user = await BasicUserModel.findById(decoded.userId);
             if (!user) {
                 return res.status(401).json({ message: "User not found" });
             }
