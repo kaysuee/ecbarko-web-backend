@@ -251,4 +251,45 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// User change password endpoint
+router.post('/change-password', isUser, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  try {
+    // Get user from token (set by isUser middleware)
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update user password
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { password: hashedNewPassword },
+      { new: true }
+    );
+    
+    // Remove password from response
+    const { password, ...userWithoutPassword } = updatedUser.toObject();
+    
+    res.status(200).json({ 
+      message: 'Password changed successfully',
+      user: userWithoutPassword
+    });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ message: 'Failed to change password', error: err.message });
+  }
+});
+
 export default router;
