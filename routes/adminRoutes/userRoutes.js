@@ -130,16 +130,13 @@ router.post(
 
       const updateData = { name };
       if (req.file) {
-        updateData.profileImage = "/uploads/" + req.file.filename;
+        // Store the full URL in the database
+        updateData.profileImage = `${process.env.BACKEND_URL || 'https://ecbarko-back.onrender.com'}/uploads/${req.file.filename}`;
       }
       
-      // Use the correct model based on the user's role
-      let updatedUser;
-      if (req.user.role === "super admin" || req.user.role === "admin" || req.user.role === "ticketclerk") {
-        // These roles are in the Users collection (saAdmin.model.js)
-        updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
-      } else {
-        // Regular users are in the User collection (userAccount.model.js)
+      let updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
+      
+      if (!updatedUser) {
         updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
       }
 
