@@ -143,6 +143,7 @@ router.post(
         return res.status(404).json({ message: "User not found" });
       }
 
+      console.log("Profile updated successfully:", updatedUser);
       res.status(200).json({ user: updatedUser });
     } catch (err) {
       console.error("Update profile error:", err);

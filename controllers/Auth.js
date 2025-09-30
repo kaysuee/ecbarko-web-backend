@@ -159,9 +159,6 @@ const CheckUser = async (req, res) => {
   try {
     const user = req.user;
     if (!user) {
-      user = await TicketClerkModel.findById(user._id);
-    }
-    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
