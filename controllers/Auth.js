@@ -1,4 +1,5 @@
-import UserModel from "../models/user.js";
+import UserModel from "../models/superAdminModels/saAdmin.model.js";
+import UserAccountModel from "../models/adminModels/userAccount.model.js";
 import CardModel from "../models/card.js";
 import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
@@ -62,11 +63,16 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // First try to find user in UserModel
-    let user = await UserModel.findOne({ email });
+    // Try to find user in all collections
+    let user = await UserModel.findOne({ email }); // Super admin
     let clerk = false;
     
-    // If not found in UserModel, try TicketClerkModel
+    // If not found in UserModel, try UserAccountModel (admin)
+    if (!user) {
+      user = await UserAccountModel.findOne({ email });
+    }
+    
+    // If still not found, try TicketClerkModel
     if (!user) {
       user = await TicketClerkModel.findOne({ email });
       clerk = true;
@@ -161,6 +167,15 @@ const CheckUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    console.log("CheckUser - User data:", {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage,
+      collection: user.constructor.modelName
+    });
 
     res.status(200).json(user);
   } catch (error) {
