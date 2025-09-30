@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import Token from '../../models/token.model.js'; 
 import sendEmail from '../../utlis/sendEmail.js';
-import upload from "../../middlewares/upload.js";
+import upload from "../../middleware/upload.js";
 
 const router = express.Router();
 
