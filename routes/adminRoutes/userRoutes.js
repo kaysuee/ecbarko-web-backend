@@ -133,17 +133,24 @@ router.post(
         updateData.profileImage = "/uploads/" + req.file.filename;
       }
       
+      // Use the correct model based on the user's role
       let updatedUser;
-      if (req.user.role === "ticketclerk") {
-        updatedUser = await TicketClerkModel.findByIdAndUpdate(userId, updateData, { new: true });
+      if (req.user.role === "super admin" || req.user.role === "admin" || req.user.role === "ticketclerk") {
+        // These roles are in the Users collection (saAdmin.model.js)
+        updatedUser = await Users.findByIdAndUpdate(userId, updateData, { new: true });
       } else {
-        updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        // Regular users are in the User collection (userAccount.model.js)
+        updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+      }
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
       }
 
       res.status(200).json({ user: updatedUser });
     } catch (err) {
       console.error("Update profile error:", err);
-      res.status(500).json({ message: "Error updating profile" });
+      res.status(500).json({ message: "Error updating profile", error: err.message });
     }
   }
 );
