@@ -131,6 +131,13 @@ router.post(
       console.log("User from middleware:", req.user);
       console.log("Request body:", req.body);
       console.log("File:", req.file);
+      console.log("File details:", req.file ? {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        path: req.file.path,
+        size: req.file.size
+      } : "No file received");
       
       const { name } = req.body;
       const userId = req.user._id; 
