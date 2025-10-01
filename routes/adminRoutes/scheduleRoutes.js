@@ -15,11 +15,11 @@ router.get('/', isUser, async (req, res) => {
 
     let schedules;
 
-    if (user.role === 'super admin') {
-      console.log('Fetching all schedules for super admin');
+    if (user.role === 'super admin' || user.role === 'ticket clerk') {
+      console.log('Fetching all schedules for super admin/ticket clerk');
       schedules = await Schedule.find();
-    } else if (user.role === 'admin' || user.role === 'ticket clerk') {
-      console.log('Fetching schedules for admin/ticket clerk with shippingLines:', user.shippingLines);
+    } else if (user.role === 'admin') {
+      console.log('Fetching schedules for admin with shippingLines:', user.shippingLines);
       
       let userShippingLines = user.shippingLines;
       
@@ -36,7 +36,7 @@ router.get('/', isUser, async (req, res) => {
           shippingLines: userShippingLines 
         });
       } else {
-        console.log('No shippingLines found for admin/ticket clerk user');
+        console.log('No shippingLines found for admin user');
         schedules = [];
       }
     } else {
