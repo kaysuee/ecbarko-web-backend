@@ -14,7 +14,7 @@ router.get('/', isUser, async (req, res) => {
 
     if (user.role === 'super admin') {
       bookings = await ActiveBookingModel.find().sort({ createdAt: -1 });
-    } else if (user.role === 'admin') {
+    } else if (user.role === 'admin' || user.role === 'ticket clerk') {
       let userShippingLines = user.shippingLines;
 
       if (!userShippingLines && adminId) {
@@ -45,7 +45,7 @@ router.post('/', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to create bookings' });
     }
 
@@ -63,11 +63,11 @@ router.put('/:id', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to update bookings' });
     }
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'ticket clerk') {
       const existingBooking = await ActiveBookingModel.findById(req.params.id);
       if (existingBooking && existingBooking.shippingLine !== user.shippingLines) {
         return res.status(403).json({
@@ -96,11 +96,11 @@ router.delete('/:id', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to delete bookings' });
     }
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'ticket clerk') {
       const existingBooking = await ActiveBookingModel.findById(req.params.id);
       if (existingBooking && existingBooking.shippingLine !== user.shippingLines) {
         return res.status(403).json({
