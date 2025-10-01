@@ -12,7 +12,7 @@ router.get('/', isUser, async (req, res) => {
 
     let bookings;
 
-    if (user.role === 'super admin') {
+    if (user.role === 'super admin' || user.role === 'ticket clerk') {
       bookings = await ActiveBookingModel.find().sort({ createdAt: -1 });
     } else if (user.role === 'admin') {
       let userShippingLines = user.shippingLines;
@@ -45,7 +45,7 @@ router.post('/', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to create bookings' });
     }
 
@@ -63,7 +63,7 @@ router.put('/:id', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to update bookings' });
     }
 
@@ -96,7 +96,7 @@ router.delete('/:id', isUser, async (req, res) => {
   try {
     const user = req.user;
 
-    if (user.role !== 'super admin' && user.role !== 'admin') {
+    if (user.role !== 'super admin' && user.role !== 'admin' && user.role !== 'ticket clerk') {
       return res.status(403).json({ error: 'Unauthorized to delete bookings' });
     }
 
