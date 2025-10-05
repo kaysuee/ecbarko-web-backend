@@ -100,14 +100,11 @@ router.get('/card/:cardNumber', async (req, res) => {
   }
 });
 
-// Add this route after the existing GET routes (around line 85, after the '/validate-card/:cardNumber' route)
-
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     console.log('Fetching vehicles for userId:', userId);
     
-    // Find the vehicle group for this userId
     const vehicleGroup = await Vehicle.findOne({ userId });
     
     if (!vehicleGroup) {
@@ -117,7 +114,6 @@ router.get('/user/:userId', async (req, res) => {
     
     console.log(`Found vehicle group with ${vehicleGroup.vehicles.length} vehicles`);
     
-    // Map the vehicles to the flat structure
     const userVehicles = vehicleGroup.vehicles.map(vehicle => ({
       _id: vehicle.vehicleId,
       cardNumber: vehicleGroup.cardNumber,
@@ -128,20 +124,13 @@ router.get('/user/:userId', async (req, res) => {
       category: vehicle.category,
       price: vehicle.price,
       laneMeter: vehicle.laneMeter,
-      laneMeterRange: vehicle.laneMeterRange,
       icon: vehicle.icon,
       plateNumber: vehicle.plateNumber,
       status: vehicle.status,
-      lastActive: vehicle.lastActive,
       registeredBy: vehicleGroup.registeredBy,
-      createdAt: vehicleGroup.createdAt,
-      updatedAt: vehicleGroup.updatedAt,
-      groupId: vehicleGroup._id,
-      isGrouped: true,
-      totalVehiclesInGroup: vehicleGroup.totalVehicles
+      createdAt: vehicleGroup.createdAt
     }));
     
-    console.log(`Returning ${userVehicles.length} vehicles for userId`);
     res.json(userVehicles);
   } catch (err) {
     console.error('Fetch user vehicles error:', err);
