@@ -105,14 +105,15 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     console.log('Fetching vehicles for userId:', userId);
     
-    const vehicleGroup = await Vehicle.findOne({ userId });
+    // Find the vehicle group where userId matches
+    const vehicleGroup = await Vehicle.findOne({ userId: userId });
     
     if (!vehicleGroup) {
       console.log('No vehicle group found for userId:', userId);
       return res.json([]);
     }
     
-    console.log(`Found vehicle group with ${vehicleGroup.vehicles.length} vehicles`);
+    console.log(`Found vehicle group for userId ${userId}: Card ${vehicleGroup.cardNumber} with ${vehicleGroup.vehicles.length} vehicles`);
     
     const userVehicles = vehicleGroup.vehicles.map(vehicle => ({
       _id: vehicle.vehicleId,
@@ -131,6 +132,7 @@ router.get('/user/:userId', async (req, res) => {
       createdAt: vehicleGroup.createdAt
     }));
     
+    console.log(`Returning ${userVehicles.length} vehicles for userId ${userId}`);
     res.json(userVehicles);
   } catch (err) {
     console.error('Fetch user vehicles error:', err);
