@@ -1,6 +1,7 @@
 import express from 'express';
 import TicketClerk from '../../models/adminModels/ticketclerk.model.js';
 import Token from '../../models/token.model.js';
+import BlacklistedTokenModel from '../../models/blacklistedToken.model.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import sendEmail from '../../utlis/sendEmail.js';
@@ -110,6 +111,17 @@ router.put('/:id', async (req, res) => {
     }
 
     const updated = await TicketClerk.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    
+    // If ticket clerk is being deactivated, blacklist their token to force logout
+    if (req.body.status === 'deactivated') {
+      await BlacklistedTokenModel.create({ userId: req.params.id });
+    }
+    
+    // If ticket clerk is being reactivated, remove them from blacklist
+    if (req.body.status === 'active') {
+      await BlacklistedTokenModel.deleteMany({ userId: req.params.id });
+    }
+    
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
