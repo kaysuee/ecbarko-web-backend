@@ -1,4 +1,5 @@
 import UserModel from "../models/user.js";
+import AdminModel from "../models/superAdminModels/saAdmin.model.js";
 import CardModel from "../models/card.js";
 import CardHistory from "../models/cardHistory.js";
 import Otp from "../models/otp.js";
@@ -9,6 +10,7 @@ import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { sendOtpEmail, sendResetEmail } from "../utlis/email.js";
 import Taphistory from "../models/tapHistory.js";
+import BlacklistedTokenModel from "../models/blacklistedToken.model.js";
 
 const register = async (req, res) => {
   try {
@@ -62,11 +64,11 @@ const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // First try to find user in UserModel
-    let user = await UserModel.findOne({ email });
+    // First try to find user in AdminModel (super admin and admin accounts)
+    let user = await AdminModel.findOne({ email });
     let clerk = false;
     
-    // If not found in UserModel, try TicketClerkModel
+    // If not found in AdminModel, try TicketClerkModel
     if (!user) {
       user = await TicketClerkModel.findOne({ email });
       clerk = true;
@@ -78,11 +80,13 @@ const Login = async (req, res) => {
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // Check if user account is active (for ticket clerks)
-    if (clerk && user.status !== 'active') {
+    // Check if user account is active
+    if ((!clerk && (user.status === 'inactive' || user.status === 'deactivated')) || 
+        (clerk && user.status === 'inactive')) {
+      let message = "Account is deactivated. Please contact administration.";
       return res
         .status(403)
-        .json({ success: false, message: "Account is not active. Please check your email for activation instructions." });
+        .json({ success: false, message });
     }
 
     let isPasswordValid = false;
@@ -118,6 +122,9 @@ const Login = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    
+    // Clear any existing blacklisted tokens for this user (in case they were reactivated)
+    await BlacklistedTokenModel.deleteMany({ userId: user._id });
     
     // Clear existing cookie and set new one
     res.clearCookie("token");

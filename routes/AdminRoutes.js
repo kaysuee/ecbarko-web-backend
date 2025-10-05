@@ -1,5 +1,5 @@
 import express from 'express';
-import { Getuser, deletUser } from '../controllers/Admin.js';
+import { Getuser, deletUser, verifyAdminAuth } from '../controllers/Admin.js';
 import { isSuperAdmin, isAdminOrSuperAdmin } from '../middleware/verifyToken.js'; 
 import { getAboutContent, updateAboutContent } from '../controllers/AboutController.js';
 import { getHomeContent, updateHomeContent } from '../controllers/HomeControllers.js';
@@ -14,6 +14,7 @@ const AdminRoutes = express.Router();
 
 AdminRoutes.get('/getuser', isAdminOrSuperAdmin, Getuser);  
 AdminRoutes.delete('/delet/:id', isAdminOrSuperAdmin, deletUser);  
+AdminRoutes.post('/verify-auth', verifyAdminAuth);  
 
 // New email route
 AdminRoutes.post('/send-email', sendAutomaticEmail);

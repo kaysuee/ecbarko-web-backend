@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../../models/adminModels/userAccount.model.js';
 import Users from '../../models/superAdminModels/saAdmin.model.js';
+import BlacklistedTokenModel from '../../models/blacklistedToken.model.js';
 import { isAdminOrSuperAdmin, isUser } from '../../middleware/verifyToken.js';  
 import { sendResetPassword } from '../../utlis/email.js';
 import crypto from 'crypto';
@@ -205,6 +206,17 @@ router.put('/:id/status', async (req, res) => {
         { status, reason },
         { new: true }
       );
+      
+      // If user is being deactivated, blacklist their token to force logout
+      if (status === 'deactivated') {
+        await BlacklistedTokenModel.create({ userId: req.params.id });
+      }
+      
+      // If user is being reactivated, remove them from blacklist
+      if (status === 'active') {
+        await BlacklistedTokenModel.deleteMany({ userId: req.params.id });
+      }
+      
       res.json(updatedUser);
     } catch (err) {
       res.status(400).json({ error: err.message });

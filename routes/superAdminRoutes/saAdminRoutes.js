@@ -1,6 +1,7 @@
 import express from "express";
 import SAAdmin from "../../models/superAdminModels/saAdmin.model.js";
 import Token from "../../models/token.model.js";
+import BlacklistedToken from "../../models/blacklistedToken.model.js";
 import crypto from 'crypto';
 import bcryptjs from 'bcryptjs';
 import sendEmail from '../../utlis/sendEmail.js';
@@ -126,6 +127,11 @@ router.put("/:id", async (req, res) => {
       }
     }
 
+    // Get current admin status before update
+    const currentAdmin = await SAAdmin.findById(req.params.id);
+    const wasActive = currentAdmin && currentAdmin.status === 'active';
+    const willBeInactive = updateFields.status === 'inactive';
+
     const updatedAdmin = await SAAdmin.findByIdAndUpdate(
       req.params.id,
       updateFields,
@@ -134,6 +140,22 @@ router.put("/:id", async (req, res) => {
 
     if (!updatedAdmin) {
       return res.status(404).json({ error: "Admin not found." });
+    }
+
+    // If admin is being deactivated, blacklist their tokens
+    if (wasActive && willBeInactive) {
+      console.log(`Blacklisting tokens for admin: ${updatedAdmin.email}`);
+      await BlacklistedToken.create({
+        userId: updatedAdmin._id.toString()
+      });
+    }
+
+    // If admin is being reactivated, remove blacklisted tokens
+    if (!wasActive && updateFields.status === 'active') {
+      console.log(`Removing blacklisted tokens for admin: ${updatedAdmin.email}`);
+      await BlacklistedToken.deleteMany({
+        userId: updatedAdmin._id.toString()
+      });
     }
 
     res.json(updatedAdmin);
