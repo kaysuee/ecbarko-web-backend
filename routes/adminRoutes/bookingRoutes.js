@@ -70,7 +70,7 @@ router.post('/', isUser, async (req, res) => {
       console.log("schedcde", schedcde);
       const result = await scheduleModel.updateOne({
   schedcde: schedcde},
-  { $inc: { vehiclecapacity: -slot } }
+  { $inc: { vehicleBooked: slot } }
 );
 
       if(result.modifiedCount >0)
