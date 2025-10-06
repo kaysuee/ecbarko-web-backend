@@ -55,6 +55,7 @@ router.post('/', isUser, async (req, res) => {
 
     if (req.body.hasVehicle) {
       const type = req.body.vehicleType;
+      const schedcde = req.body.schedcde;
       let slot = 0;
       console.log("INCOMING BOOK VEHICLE TYPE", type)
       switch (type) {
@@ -65,9 +66,9 @@ router.post('/', isUser, async (req, res) => {
         case "TYPE 5": slot = 9; break;
         default: slot = 0;
       }
-
+      console.log("SLOT", slot)
       await scheduleModel.findByIdAndUpdate(
-  req.body.schedcde,
+  schedcde,
   { $inc: { vehiclecapacity: -slot } }
 );
     }
