@@ -67,8 +67,8 @@ router.post('/', isUser, async (req, res) => {
         default: slot = 0;
       }
       console.log("SLOT", slot)
-      await scheduleModel.findByIdAndUpdate(
-  schedcde,
+      await scheduleModel.updateOne({
+  schedcde: schedcde},
   { $inc: { vehiclecapacity: -slot } }
 );
     }
