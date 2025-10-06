@@ -66,11 +66,20 @@ router.post('/', isUser, async (req, res) => {
         case "TYPE 5": slot = 9; break;
         default: slot = 0;
       }
-      console.log("SLOT", slot)
-      await scheduleModel.updateOne({
+      console.log("SLOT", slot);
+      console.log("schedcde", schedcde);
+      const result = await scheduleModel.updateOne({
   schedcde: schedcde},
   { $inc: { vehiclecapacity: -slot } }
 );
+
+      if(result.modifiedCount >0)
+      {
+        console.log("SUCCESS SUBSTRACT");
+      }else
+      { 
+        console.log("DI KO ALAM", result);
+      }
     }
 
 
