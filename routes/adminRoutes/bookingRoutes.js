@@ -1,7 +1,9 @@
 import express from 'express';
 import ActiveBookingModel from '../../models/activebooking.js';
+import ScheduleModel from '../../models/adminModels/schedule.model.js'
 import UserModel from '../../models/superAdminModels/saAdmin.model.js';
 import { isUser } from '../../middleware/verifyToken.js';
+import scheduleModel from '../../models/adminModels/schedule.model.js';
 
 const router = express.Router();
 
@@ -50,6 +52,26 @@ router.post('/', isUser, async (req, res) => {
     }
 
     console.log("Incoming booking body:", req.body);
+
+    if (req.body.hasVehicle) {
+      const type = req.body.vehicleType;
+      let slot = 0;
+      console.log("INCOMING BOOK VEHICLE TYPE", type)
+      switch (type) {
+        case "TYPE 1": slot = 1; break;
+        case "TYPE 2": slot = 3; break;
+        case "TYPE 3": slot = 5; break;
+        case "TYPE 4": slot = 7; break;
+        case "TYPE 5": slot = 9; break;
+        default: slot = 0;
+      }
+
+      await scheduleModel.findByIdAndUpdate(
+  req.body.schedcde,
+  { $inc: { vehiclecapacity: -slot } }
+);
+    }
+
 
     const newBooking = new ActiveBookingModel(req.body);
     await newBooking.save();
